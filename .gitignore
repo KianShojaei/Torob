@@ -1,0 +1,30 @@
+# Python & Virtual Env
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+.pytest_cache/
+
+# Secret Environment Variables (NEVER push API keys to GitHub!)
+.env
+.env.local
+
+# Raw heavy dataset files (>100MB)
+data/*.csv
+data/torob_assistant.db
+data/torob_assistant.db-shm
+data/torob_assistant.db-wal
+data/torob_portable.db
+
+# Keep portable compressed DB bundle for server deployment!
+!data/torob_portable.db.gz
+
+# Temporary helper scripts
+build_phase*.py
+fix_*.py
+part*.py
+upgrade_*.py
+add_pipeline_*.py
+prepare_for_github_and_server.py

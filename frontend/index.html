@@ -1,0 +1,1224 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>دستیار خرید حضوری ترب</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet" type="text/css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    body {
+      font-family: 'Vazirmatn', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: #f8fafc;
+      color: #0f172a;
+      -webkit-font-smoothing: antialiased;
+    }
+    .torob-bg { background-color: #d73948; }
+    .torob-text { color: #d73948; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    #gpt-map { height: 340px; width: 100%; border-radius: 12px; z-index: 10; border: 1px solid #e2e8f0; }
+    .leaflet-tile-pane { filter: saturate(0.9) contrast(1.02); }
+    .price-pin-marker {
+      background: #ffffff;
+      color: #0f172a;
+      border: 1.5px solid #94a3b8;
+      border-radius: 9999px;
+      padding: 2px 8px;
+      font-family: 'Vazirmatn', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      white-space: nowrap;
+      box-shadow: 0 3px 8px rgba(15, 23, 42, 0.18);
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .price-pin-marker.top-rank {
+      background: #d73948;
+      color: #ffffff;
+      border-color: #991b1b;
+    }
+    .price-pin-marker:hover {
+      background: #0f172a;
+      color: #ffffff;
+      border-color: #0f172a;
+      transform: scale(1.1);
+      z-index: 999 !important;
+    }
+  </style>
+</head>
+<body class="min-h-screen pb-16">
+
+  <!-- Minimal Clean Header -->
+  <header class="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-slate-200">
+    <div class="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between gap-3">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg torob-bg flex items-center justify-center text-white font-bold text-base">ت</div>
+        <h1 class="font-bold text-sm sm:text-base text-slate-900">دستیار خرید حضوری ترب</h1>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button onclick="openModal('loc-modal')" class="text-xs px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 font-medium flex items-center gap-1.5 transition">
+          <svg class="w-3.5 h-3.5 text-red-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"/></svg>
+          <span id="current-loc-label">تهران • همه مناطق</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Clean 4 Tabs -->
+    <div class="max-w-5xl mx-auto px-4 flex border-t border-slate-100 overflow-x-auto no-scrollbar text-xs font-medium">
+      <button onclick="switchTab('discover')" id="tab-discover" class="py-2.5 px-4 border-b-2 border-red-600 text-red-600 font-bold whitespace-nowrap">
+        ۱. پیشنهاد کالا و نقشه
+      </button>
+      <button onclick="switchTab('stores')" id="tab-stores" class="py-2.5 px-4 border-b-2 border-transparent text-slate-600 whitespace-nowrap">
+        ۲. فروشگاه‌های تهران (<span id="stores-tab-count">۰</span>)
+      </button>
+      <button onclick="switchTab('contact')" id="tab-contact" class="py-2.5 px-4 border-b-2 border-transparent text-slate-600 whitespace-nowrap">
+        ۳. استعلام و پیشنهاد قیمت (<span id="contact-tab-count">۰</span>)
+      </button>
+      <button onclick="switchTab('plan')" id="tab-plan" class="py-2.5 px-4 border-b-2 border-transparent text-slate-600 whitespace-nowrap">
+        ۴. برنامه مسیر (<span id="plan-tab-count">۰</span>)
+      </button>
+    </div>
+  </header>
+
+  <main class="max-w-5xl mx-auto px-4 pt-4 space-y-4">
+
+    <!-- Clean Search & Filter Bar -->
+    <section class="bg-white rounded-xl p-3.5 border border-slate-200 space-y-3">
+      <div class="flex gap-2">
+        <input
+          id="search-input"
+          type="text"
+          placeholder="چه کالایی می‌خواهید؟ (مثلاً: هدفون شیاومی تا ۵ میلیون، یا موبایل با باتری قوی...)"
+          class="flex-1 px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-red-500 focus:bg-white transition"
+          onkeydown="if(event.key==='Enter') handleUserSearchOrChat(false)"
+        />
+        <button
+          onclick="handleUserSearchOrChat(false)"
+          id="ask-btn"
+          class="torob-bg hover:opacity-95 text-white px-5 py-2.5 rounded-lg text-xs sm:text-sm font-bold whitespace-nowrap transition"
+        >
+          جستجو
+        </button>
+      </div>
+
+      <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100 text-xs">
+        <div class="flex items-center gap-2">
+          <button
+            onclick="openModal('prefs-modal')"
+            class="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-medium flex items-center gap-1.5 transition"
+          >
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75"/></svg>
+            <span>انتخاب اولویت و برند</span>
+            <span id="active-prefs-badge" class="hidden bg-red-500 text-white text-[10px] px-1.5 rounded-full">فعال</span>
+          </button>
+          <div id="active-filter-pills" class="flex items-center gap-1 flex-wrap"></div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-1.5">
+          <select id="filter-budget" onchange="onFilterChange()" class="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-xs text-slate-700">
+            <option value="">همه بودجه‌ها</option>
+            <option value="2000000">تا ۲ میلیون تومان</option>
+            <option value="5000000">تا ۵ میلیون تومان</option>
+            <option value="10000000">تا ۱۰ میلیون تومان</option>
+            <option value="20000000">تا ۲۰ میلیون تومان</option>
+            <option value="35000000">تا ۳۵ میلیون تومان</option>
+            <option value="60000000">تا ۶۰ میلیون تومان</option>
+            <option value="100000000">تا ۱۰۰ میلیون تومان</option>
+          </select>
+
+          <select id="filter-installment" onchange="onFilterChange()" class="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-xs text-slate-700">
+            <option value="any">نقدی و قسطی</option>
+            <option value="confirmed_only">فقط قسطی حضوری تأییدشده</option>
+            <option value="all_installment">همه فروشگاه‌های قسطی</option>
+          </select>
+
+          <select id="filter-travel" onchange="onTravelOrStoreFilterChange()" class="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-xs text-slate-700">
+            <option value="car">وسیله: خودرو</option>
+            <option value="metro">وسیله: مترو</option>
+            <option value="walk">وسیله: پیاده</option>
+          </select>
+
+          <select id="filter-sort" onchange="onFilterChange()" class="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-xs text-slate-700 font-medium">
+            <option value="best">مرتب‌سازی: بهترین ترکیب</option>
+            <option value="cheapest">خوش‌قیمت‌ترین (ارزان‌ترین)</option>
+            <option value="nearest">نزدیک‌ترین فروشگاه</option>
+            <option value="open">باز بودن هنگام رسیدن</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <!-- Single-Line Clean AI Guidance Box -->
+    <section class="bg-white border border-slate-200 rounded-xl px-4 py-3 flex items-center gap-3">
+      <div class="w-6 h-6 rounded-md bg-slate-900 text-white flex items-center justify-center text-[11px] font-bold shrink-0">AI</div>
+      <div id="agent-reply-text" class="text-xs sm:text-sm text-slate-800 leading-relaxed flex-1">
+        در حال آماده‌سازی پیشنهادها...
+      </div>
+    </section>
+
+    <!-- TAB 1: PRODUCTS + WORKING OSM MAP -->
+    <div id="view-discover" class="space-y-4">
+
+      <div class="flex items-center justify-between">
+        <h2 class="font-bold text-sm text-slate-900">مدل‌های پیشنهادی (با کلیک روی هر کارت، مکان مغازه‌های آن روی نقشه نمایش داده می‌شود)</h2>
+        <button onclick="compareSelectedProducts()" id="compare-products-btn" class="hidden text-xs bg-slate-900 text-white px-3 py-1.5 rounded-lg font-medium">
+          مقایسه انتخاب‌شده‌ها (<span id="compare-prod-count">۰</span>)
+        </button>
+      </div>
+
+      <div id="product-comparison-box" class="hidden bg-white rounded-xl p-3.5 border border-slate-200 overflow-x-auto"></div>
+      <div id="products-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+
+      <!-- Working OpenStreetMap Split View -->
+      <section class="bg-white rounded-xl border border-slate-200 p-3.5 space-y-3">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <h3 class="font-bold text-xs sm:text-sm text-slate-900">
+              نقشه فروشگاه‌های تهران برای: <span id="map-product-title" class="text-red-600">...</span>
+            </h3>
+            <p class="text-[11px] text-slate-500 mt-0.5">
+              قیمت منصفانه بازار: <strong id="fair-price-banner" class="text-emerald-700">نامشخص</strong> • زمان رسیدن با <strong id="travel-mode-banner" class="text-slate-800">خودرو</strong> محاسبه شده است
+            </p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="contactTopStores(3)" class="torob-bg text-white text-xs font-bold px-3 py-1.5 rounded-lg">
+              استعلام از ۳ فروشگاه برتر
+            </button>
+            <button onclick="switchTab('stores')" class="bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-medium px-3 py-1.5 rounded-lg">
+              لیست کامل مغازه‌ها
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-3 items-start">
+          <div class="lg:col-span-2">
+            <div id="gpt-map"></div>
+          </div>
+          <div id="map-side-stores" class="space-y-2 max-h-[340px] overflow-y-auto pr-0.5"></div>
+        </div>
+      </section>
+    </div>
+
+    <!-- TAB 2: STORES LIST -->
+    <div id="view-stores" class="space-y-4 hidden">
+      <div class="bg-white rounded-xl p-3.5 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <span class="text-[11px] text-slate-500">فروشگاه‌های حضوری تهران برای:</span>
+          <h2 id="active-product-title" class="font-bold text-sm text-slate-900 mt-0.5">انتخاب نشده</h2>
+          <p id="radius-notice-banner" class="text-xs text-amber-700 mt-1 hidden"></p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="toggleStoreComparisonTable()" class="bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-medium px-3 py-2 rounded-lg">
+            مقایسه جدولی مغازه‌ها
+          </button>
+          <button onclick="contactTopStores(3)" class="torob-bg text-white text-xs font-bold px-3.5 py-2 rounded-lg">
+            استعلام همزمان از ۳ مغازه
+          </button>
+        </div>
+      </div>
+
+      <div id="store-comparison-box" class="hidden bg-white rounded-xl p-3.5 border border-slate-200 overflow-x-auto"></div>
+      <div id="stores-list" class="space-y-2.5"></div>
+    </div>
+
+    <!-- TAB 3: SELLER CONTACT & NEGOTIATION -->
+    <div id="view-contact" class="space-y-4 hidden">
+      <div class="bg-white rounded-xl p-3.5 border border-slate-200 flex items-center justify-between">
+        <div>
+          <h2 class="font-bold text-sm text-slate-900">استعلام موجودی و پیشنهاد قیمت منصفانه به فروشنده</h2>
+          <p class="text-xs text-slate-500 mt-0.5">در صورت عدم موجودی یا عدم پاسخ فروشنده، جایگزین‌ها به صورت خودکار نمایش داده می‌شوند.</p>
+        </div>
+        <span class="text-[11px] bg-slate-100 text-slate-600 px-2.5 py-1 rounded font-medium">شبیه‌ساز دمو</span>
+      </div>
+
+      <div id="conversations-list" class="space-y-2.5"></div>
+
+      <div id="failover-alternatives-box" class="hidden bg-amber-50/70 border border-amber-300 rounded-xl p-4 space-y-3">
+        <div class="font-bold text-xs sm:text-sm text-amber-900">جایگزین‌های خودکار پیشنهادشده (به دلیل عدم موجودی / عدم پاسخ):</div>
+        <div id="replacement-stores-list" class="space-y-2"></div>
+        <div id="similar-models-list" class="pt-2 border-t border-amber-200 space-y-2"></div>
+      </div>
+    </div>
+
+    <!-- TAB 4: VISIT PLAN -->
+    <div id="view-plan" class="space-y-4 hidden">
+      <div class="bg-white rounded-xl p-3.5 border border-slate-200 flex items-center justify-between">
+        <div>
+          <h2 class="font-bold text-sm text-slate-900">برنامه مسیر مراجعه حضوری</h2>
+          <p class="text-xs text-slate-500 mt-0.5">ترتیب بهینه مراجعه بر اساس مسافت و ساعت کاری</p>
+        </div>
+        <button onclick="shareVisitPlan()" class="text-xs bg-slate-900 text-white px-3 py-2 rounded-lg font-medium">کپی برنامه</button>
+      </div>
+      <div id="plan-warnings-box" class="space-y-1.5"></div>
+      <div id="visit-plan-stops" class="space-y-2.5"></div>
+    </div>
+
+  </main>
+
+  <!-- Separate Preferences & Priority Modal -->
+  <div id="prefs-modal" class="fixed inset-0 z-50 bg-slate-900/50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white w-full max-w-md rounded-t-2xl sm:rounded-xl p-5 space-y-4 max-h-[85vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+        <h3 class="font-bold text-sm text-slate-900">تنظیم اولویت‌ها و فیلتر هوشمند</h3>
+        <button onclick="closeModal('prefs-modal')" class="text-slate-400 hover:text-slate-700 text-xs font-bold">بستن</button>
+      </div>
+
+      <div id="guided-questions-modal-body" class="space-y-4 text-xs"></div>
+
+      <div class="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+        <button onclick="resetPreferences()" class="text-xs text-slate-500 hover:text-slate-800 px-3 py-2">پاک کردن فیلترها</button>
+        <button onclick="closeModal('prefs-modal'); handleUserSearchOrChat(true);" class="torob-bg text-white text-xs font-bold px-5 py-2.5 rounded-lg">
+          اعمال و مشاهده نتایج
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Store Details Modal -->
+  <div id="mall-modal" class="fixed inset-0 z-50 bg-slate-900/50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white w-full max-w-lg rounded-t-2xl sm:rounded-xl p-5 space-y-3.5 max-h-[85vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+        <h3 class="font-bold text-sm text-slate-900" id="mall-modal-title">جزئیات پاساژ و ساعت کاری</h3>
+        <button onclick="closeModal('mall-modal')" class="text-slate-400 hover:text-slate-700 text-xs font-bold">بستن</button>
+      </div>
+      <div id="mall-modal-body" class="space-y-3 text-xs"></div>
+    </div>
+  </div>
+
+  <!-- City & District Modal -->
+  <div id="loc-modal" class="fixed inset-0 z-50 bg-slate-900/50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white w-full max-w-lg rounded-t-2xl sm:rounded-xl p-5 space-y-4 max-h-[85vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+        <h3 class="font-bold text-sm text-slate-900">انتخاب شهر و منطقه</h3>
+        <button onclick="closeModal('loc-modal')" class="text-slate-400 hover:text-slate-700 text-xs font-bold">بستن</button>
+      </div>
+
+      <div class="space-y-1.5">
+        <label class="block text-xs font-bold text-slate-700">۱. انتخاب شهر:</label>
+        <div id="cities-grid" class="grid grid-cols-3 sm:grid-cols-6 gap-1.5"></div>
+        <p id="city-notice" class="text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 hidden"></p>
+      </div>
+
+      <div class="space-y-2 pt-2 border-t border-slate-100">
+        <div class="flex items-center justify-between">
+          <label class="block text-xs font-bold text-slate-700">۲. انتخاب منطقه در تهران:</label>
+          <button onclick="useBrowserGPS()" class="text-[11px] text-blue-700 hover:underline font-medium">مکان‌یابی خودکار (GPS)</button>
+        </div>
+
+        <button
+          onclick="selectNeighborhood('همه مناطق', 35.6961, 51.4078, 'ALL')"
+          class="w-full text-right p-2.5 rounded-lg border border-red-500 bg-red-50/40 text-xs font-bold text-slate-900 flex items-center justify-between"
+        >
+          <span>همه مناطق تهران (سراسر شهر)</span>
+          <span class="text-[11px] text-red-700 font-medium">۶,۴۷۶ فروشگاه</span>
+        </button>
+
+        <div id="neighborhoods-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-1.5 pt-1 max-h-56 overflow-y-auto"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const state = {
+      selectedCity: 'تهران',
+      userLat: 35.6961,
+      userLon: 51.4078,
+      locationLabel: 'همه مناطق',
+      neighborhoodFilter: 'ALL',
+      cities: [],
+      neighborhoods: [],
+      recommendedModels: [],
+      guidedQuestions: [],
+      selectedCompareProducts: new Set(),
+      selectedUsage: null,
+      selectedBrand: null,
+      activeProductId: null,
+      activeProductTitle: '',
+      fairMarketPriceToman: null,
+      fairMarketPriceFa: 'نامشخص',
+      stores: [],
+      selectedVisitOffers: new Set(),
+      conversationIds: [],
+      pollTimer: null,
+      map: null,
+      mapMarkers: []
+    };
+
+    const toFaDigits = (n) => String(n ?? '').replace(/[0-9]/g, d => '۰۱۲۳۴۵۶۷۸۹'[Number(d)]);
+    const safeStr = (s) => String(s ?? '').replace(/['"\\]/g, '');
+
+    function formatMarkdownReply(text) {
+      if (!text || !String(text).trim()) {
+        return 'بر اساس بررسی دیتاست فروشگاه‌های حضوری تهران، بهترین گزینه‌های موجود در بازار در ادامه نمایش داده شده‌اند.';
+      }
+      return toFaDigits(String(text))
+        .replace(/\*\*(.*?)\*\*/g, '<strong class="text-slate-900">$1</strong>')
+        .split('\n')
+        .join('<br/>');
+    }
+
+    function setBudgetDropdownValue(budgetVal) {
+      const sel = document.getElementById('filter-budget');
+      if (!budgetVal) {
+        sel.value = '';
+        return;
+      }
+      const strVal = String(budgetVal);
+      if (!Array.from(sel.options).some(o => o.value === strVal)) {
+        const opt = document.createElement('option');
+        opt.value = strVal;
+        const mio = Math.round(budgetVal / 100000) / 10;
+        opt.text = `تا ${toFaDigits(mio)} میلیون تومان`;
+        sel.add(opt);
+      }
+      sel.value = strVal;
+    }
+
+    function renderActiveFilterPills() {
+      const box = document.getElementById('active-filter-pills');
+      const badge = document.getElementById('active-prefs-badge');
+      const pills = [];
+      if (state.selectedBrand) pills.push(`برند: ${state.selectedBrand}`);
+      if (state.selectedUsage) pills.push(`اولویت: ${state.selectedUsage}`);
+      badge.classList.toggle('hidden', pills.length === 0);
+      box.innerHTML = pills.map(p => `<span class="text-[11px] bg-red-50 text-red-700 border border-red-200 px-2 py-0.5 rounded-md font-medium">${p}</span>`).join('');
+    }
+
+    async function initApp() {
+      try {
+        const r = await fetch('/api/init');
+        const data = await r.json();
+        state.cities = data.cities || [];
+        state.neighborhoods = data.neighborhoods || [];
+        renderLocationPickerModal();
+        document.getElementById('search-input').value = 'هدفون بی‌سیم تا ۵ میلیون';
+        await handleUserSearchOrChat(false);
+      } catch (e) {
+        console.error('Init error:', e);
+      }
+    }
+
+    function switchTab(tab) {
+      ['discover', 'stores', 'contact', 'plan'].forEach(t => {
+        document.getElementById(`view-${t}`).classList.toggle('hidden', t !== tab);
+        const btn = document.getElementById(`tab-${t}`);
+        if (t === tab) {
+          btn.className = 'py-2.5 px-4 border-b-2 border-red-600 text-red-600 font-bold whitespace-nowrap';
+        } else {
+          btn.className = 'py-2.5 px-4 border-b-2 border-transparent text-slate-600 whitespace-nowrap';
+        }
+      });
+      if (tab === 'discover') {
+        setTimeout(() => initOrUpdateMap(), 120);
+      }
+      if (tab === 'plan') {
+        loadVisitPlan();
+      }
+    }
+
+    async function handleUserSearchOrChat(keepCurrentFilters = false) {
+      if (!keepCurrentFilters) {
+        state.selectedUsage = null;
+        state.selectedBrand = null;
+      }
+      switchTab('discover');
+
+      const q = document.getElementById('search-input').value.trim() || 'هدفون بی سیم';
+      const maxBudget = keepCurrentFilters ? document.getElementById('filter-budget').value : null;
+      const instMode = keepCurrentFilters ? document.getElementById('filter-installment').value : 'any';
+      const travelMode = document.getElementById('filter-travel').value;
+      const sortBy = document.getElementById('filter-sort').value;
+
+      const travelNames = { car: 'خودرو', metro: 'مترو', walk: 'پیاده' };
+      document.getElementById('travel-mode-banner').textContent = travelNames[travelMode] || 'خودرو';
+
+      const btn = document.getElementById('ask-btn');
+      btn.textContent = '...';
+      btn.disabled = true;
+
+      try {
+        const res = await fetch('/api/agent/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: q,
+            context: {
+              lat: state.userLat,
+              lon: state.userLon,
+              neighborhood: state.neighborhoodFilter,
+              max_budget: maxBudget ? parseInt(maxBudget) : null,
+              installment_mode: instMode,
+              travel_mode: travelMode,
+              sort_by: sortBy,
+              usage_hint: state.selectedUsage || null,
+              brand: state.selectedBrand || null
+            }
+          })
+        });
+        const data = await res.json();
+
+        document.getElementById('agent-reply-text').innerHTML = formatMarkdownReply(data.reply_fa);
+
+        const df = data.detected_filters || {};
+        if (!keepCurrentFilters) {
+          setBudgetDropdownValue(df.max_budget || '');
+          if (df.installment_mode) document.getElementById('filter-installment').value = df.installment_mode;
+          if (df.travel_mode) {
+            document.getElementById('filter-travel').value = df.travel_mode;
+            document.getElementById('travel-mode-banner').textContent = travelNames[df.travel_mode] || 'خودرو';
+          }
+          if (df.sort_by) document.getElementById('filter-sort').value = df.sort_by;
+          state.selectedBrand = df.had_fallback ? null : (df.brand || null);
+          state.selectedUsage = df.usage_hint || null;
+        }
+        renderActiveFilterPills();
+
+        for (const card of (data.cards || [])) {
+          if (card.type === 'recommendations') {
+            state.recommendedModels = card.data.recommended_models || [];
+            state.guidedQuestions = card.data.guided_questions || [];
+            renderGuidedQuestionsModal();
+            renderProductsGrid();
+          } else if (card.type === 'stores') {
+            state.stores = card.data.stores || [];
+            state.activeProductId = card.data.product_id;
+            state.activeProductTitle = card.data.product_title;
+            state.fairMarketPriceToman = card.data.fair_market_price_toman;
+            state.fairMarketPriceFa = card.data.fair_market_price_fa || 'نامشخص';
+            document.getElementById('active-product-title').textContent = state.activeProductTitle;
+            document.getElementById('map-product-title').textContent = state.activeProductTitle;
+            document.getElementById('fair-price-banner').textContent = state.fairMarketPriceFa;
+            updateStoresUI(card.data);
+          }
+        }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        btn.textContent = 'جستجو';
+        btn.disabled = false;
+      }
+    }
+
+    async function onFilterChange() {
+      await handleUserSearchOrChat(true);
+    }
+
+    async function onTravelOrStoreFilterChange() {
+      const travelMode = document.getElementById('filter-travel').value;
+      const travelNames = { car: 'خودرو', metro: 'مترو', walk: 'پیاده' };
+      document.getElementById('travel-mode-banner').textContent = travelNames[travelMode] || 'خودرو';
+      if (state.activeProductId) {
+        await loadStoresForProduct(state.activeProductId, state.activeProductTitle, false);
+        if (!document.getElementById('view-plan').classList.contains('hidden')) {
+          await loadVisitPlan();
+        }
+      }
+    }
+
+    function renderGuidedQuestionsModal() {
+      const box = document.getElementById('guided-questions-modal-body');
+      const questions = state.guidedQuestions || [];
+      if (!questions.length) {
+        box.innerHTML = `<div class="text-slate-500">برای این دسته فیلتر اختصاصی ثبت نشده است.</div>`;
+        return;
+      }
+      box.innerHTML = questions.map(q => `
+        <div class="space-y-2">
+          <label class="block font-bold text-slate-800">${q.question_fa}:</label>
+          <div class="grid grid-cols-2 gap-2">
+            ${(q.options || []).map(opt => {
+              const isSelected =
+                (opt.chip_type === 'usage' && (state.selectedUsage || '') === (opt.value || '')) ||
+                (opt.chip_type === 'brand' && (state.selectedBrand || '') === (opt.value || ''));
+              return `
+                <button
+                  onclick="selectModalPreference('${opt.chip_type}', '${safeStr(opt.value || '')}')"
+                  class="p-2.5 rounded-lg border text-right transition ${isSelected ? 'bg-slate-900 text-white border-slate-900 font-bold' : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'}"
+                >
+                  ${opt.label}
+                </button>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function selectModalPreference(chipType, val) {
+      if (chipType === 'brand') state.selectedBrand = val || null;
+      else if (chipType === 'usage') state.selectedUsage = val || null;
+      renderGuidedQuestionsModal();
+      renderActiveFilterPills();
+    }
+
+    function resetPreferences() {
+      state.selectedBrand = null;
+      state.selectedUsage = null;
+      document.getElementById('filter-budget').value = '';
+      document.getElementById('filter-installment').value = 'any';
+      document.getElementById('filter-sort').value = 'best';
+      renderGuidedQuestionsModal();
+      renderActiveFilterPills();
+    }
+
+    function renderProductsGrid() {
+      const grid = document.getElementById('products-grid');
+      if (!state.recommendedModels.length) {
+        grid.innerHTML = `<div class="col-span-3 bg-white p-6 rounded-xl text-center text-slate-500 text-sm border border-slate-200">محصولی یافت نشد.</div>`;
+        return;
+      }
+
+      grid.innerHTML = state.recommendedModels.map((p, idx) => {
+        const isActive = state.activeProductId === p.product_id || (idx === 0 && !state.activeProductId);
+        const checked = state.selectedCompareProducts.has(p.product_id);
+
+        return `
+          <div
+            onclick="loadStoresForProduct('${p.product_id}', '${safeStr(p.persian_title)}', false)"
+            class="bg-white rounded-xl p-3.5 border cursor-pointer ${isActive ? 'border-red-500 ring-1 ring-red-100' : 'border-slate-200 hover:border-slate-300'} flex flex-col justify-between gap-2.5 transition"
+          >
+            <div>
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-[11px] font-medium px-2 py-0.5 rounded ${idx === 0 ? 'bg-red-50 text-red-700 font-bold' : 'bg-slate-100 text-slate-600'}">
+                  ${idx === 0 ? 'پیشنهاد اول' : `گزینه ${toFaDigits(idx + 1)}`}
+                </span>
+                <label onclick="event.stopPropagation()" class="flex items-center gap-1 text-[11px] text-slate-500 cursor-pointer">
+                  <input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleCompareProduct('${p.product_id}')" class="rounded text-red-600" />
+                  مقایسه
+                </label>
+              </div>
+
+              <div class="flex gap-3 mt-2">
+                <img
+                  src="${p.image_url || 'https://placehold.co/72x72/f8fafc/94a3b8?text=Torob'}"
+                  onerror="this.src='https://placehold.co/72x72/f8fafc/94a3b8?text=Torob'"
+                  class="w-16 h-16 object-contain rounded-lg bg-slate-50 p-1 border border-slate-100 shrink-0"
+                  alt="${safeStr(p.persian_title)}"
+                />
+                <div class="flex-1 min-w-0">
+                  <h3 class="font-bold text-xs text-slate-900 line-clamp-2 leading-snug">${p.persian_title}</h3>
+                  <p class="text-xs font-bold text-red-600 mt-1">${p.price_range_fa}</p>
+                  <p class="text-[11px] text-slate-500 mt-0.5">${toFaDigits(p.shop_count)} فروشگاه در تهران</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between pt-2 border-t border-slate-100 text-[11px]">
+              <span class="text-slate-500">قیمت منصفانه: <strong class="text-emerald-700">${p.fair_market_price_fa}</strong></span>
+              <button
+                onclick="event.stopPropagation(); loadStoresForProduct('${p.product_id}', '${safeStr(p.persian_title)}', true)"
+                class="text-red-600 font-bold hover:underline"
+              >
+                لیست مغازه‌ها ←
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function toggleCompareProduct(productId) {
+      if (state.selectedCompareProducts.has(productId)) state.selectedCompareProducts.delete(productId);
+      else state.selectedCompareProducts.add(productId);
+      const btn = document.getElementById('compare-products-btn');
+      document.getElementById('compare-prod-count').textContent = toFaDigits(state.selectedCompareProducts.size);
+      btn.classList.toggle('hidden', state.selectedCompareProducts.size < 2);
+      if (state.selectedCompareProducts.size >= 2) compareSelectedProducts();
+      else document.getElementById('product-comparison-box').classList.add('hidden');
+    }
+
+    async function compareSelectedProducts() {
+      const ids = Array.from(state.selectedCompareProducts);
+      if (ids.length < 2) return;
+      const r = await fetch('/api/products/compare', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ product_ids: ids })
+      });
+      const data = await r.json();
+      const box = document.getElementById('product-comparison-box');
+      box.classList.remove('hidden');
+
+      const prods = data.products || [];
+      const rows = data.comparison_rows || [];
+
+      box.innerHTML = `
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="font-bold text-xs text-slate-900">مقایسه مشخصات و قیمت مدل‌ها</h3>
+          <button onclick="document.getElementById('product-comparison-box').classList.add('hidden')" class="text-xs text-slate-400">بستن</button>
+        </div>
+        <table class="w-full text-xs border-collapse">
+          <thead>
+            <tr class="border-b border-slate-200 bg-slate-50">
+              <th class="p-2 text-right text-slate-500 font-medium">ویژگی</th>
+              ${prods.map(p => `<th class="p-2 text-right font-bold text-slate-900 max-w-[160px] truncate">${p.persian_title}</th>`).join('')}
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map(row => `
+              <tr class="border-b border-slate-100">
+                <td class="p-2 font-medium text-slate-600 bg-slate-50/50">${row.label}</td>
+                ${prods.map(p => {
+                  const isWinner = row.winner_product_id === p.product_id;
+                  return `<td class="p-2 ${isWinner ? 'bg-emerald-50 font-bold text-emerald-800' : 'text-slate-800'}">
+                    ${row.values[p.product_id] || 'نامشخص'}
+                  </td>`;
+                }).join('')}
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    async function loadStoresForProduct(productId, productTitle, switchView = false) {
+      state.activeProductId = productId;
+      state.activeProductTitle = productTitle;
+      document.getElementById('active-product-title').textContent = productTitle;
+      document.getElementById('map-product-title').textContent = productTitle;
+
+      const maxBudget = document.getElementById('filter-budget').value;
+      const instMode = document.getElementById('filter-installment').value;
+      const travelMode = document.getElementById('filter-travel').value;
+      const sortBy = document.getElementById('filter-sort').value;
+
+      const params = new URLSearchParams({
+        product_id: productId,
+        lat: state.userLat,
+        lon: state.userLon,
+        radius_km: 25.0,
+        neighborhood: state.neighborhoodFilter,
+        installment_mode: instMode,
+        travel_mode: travelMode,
+        sort_by: sortBy
+      });
+      if (maxBudget) params.set('max_budget', maxBudget);
+
+      const r = await fetch(`/api/stores/find?${params.toString()}`);
+      const data = await r.json();
+      state.stores = data.stores || [];
+      state.fairMarketPriceToman = data.fair_market_price_toman;
+      state.fairMarketPriceFa = data.fair_market_price_fa || 'نامشخص';
+
+      document.getElementById('fair-price-banner').textContent = state.fairMarketPriceFa;
+      renderProductsGrid();
+      updateStoresUI(data);
+      if (switchView) switchTab('stores');
+    }
+
+    function updateStoresUI(data) {
+      document.getElementById('stores-tab-count').textContent = toFaDigits(state.stores.length);
+      const notice = document.getElementById('radius-notice-banner');
+      if (data.expanded_radius_notice_fa) {
+        notice.textContent = data.expanded_radius_notice_fa;
+        notice.classList.remove('hidden');
+      } else {
+        notice.classList.add('hidden');
+      }
+      renderMapSideStores();
+      renderStoresList();
+      initOrUpdateMap();
+    }
+
+    function renderMapSideStores() {
+      const box = document.getElementById('map-side-stores');
+      if (!state.stores.length) {
+        box.innerHTML = `<div class="p-4 text-xs text-slate-400 text-center">فروشگاهی با این فیلتر یافت نشد.</div>`;
+        return;
+      }
+      box.innerHTML = state.stores.slice(0, 8).map((s, idx) => `
+        <div
+          onclick="focusStoreOnMap(${idx})"
+          class="p-2.5 rounded-lg border border-slate-200 hover:border-red-400 bg-slate-50/60 hover:bg-white cursor-pointer transition space-y-1"
+        >
+          <div class="flex items-center justify-between gap-1">
+            <span class="font-bold text-xs text-slate-900 truncate">${toFaDigits(idx + 1)}. ${s.shop_name}</span>
+            <span class="text-[11px] font-bold text-red-600 shrink-0">${s.short_price_pin_fa}</span>
+          </div>
+          <p class="text-[11px] text-slate-500 truncate">${s.location_label} • ${s.guide_summary_fa}</p>
+          <div class="flex items-center justify-between pt-1 text-[10px] text-slate-600 font-medium">
+            <span>${s.distance_label_fa} • ${s.eta_label_fa}</span>
+            <button
+              onclick="event.stopPropagation(); negotiateFairPrice('${s.shop_id}', ${s.suggested_counter_offer_toman || 0})"
+              class="text-red-600 font-bold hover:underline"
+            >
+              پیشنهاد قیمت
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function initOrUpdateMap() {
+      const container = document.getElementById('gpt-map');
+      if (!container) return;
+      if (!state.map) {
+        state.map = L.map('gpt-map').setView([state.userLat, state.userLon], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+          attribution: '© OpenStreetMap'
+        }).addTo(state.map);
+      }
+      state.map.invalidateSize();
+      state.mapMarkers.forEach(m => m.remove());
+      state.mapMarkers = [];
+
+      const uMarker = L.circleMarker([state.userLat, state.userLon], {
+        radius: 8,
+        color: '#ffffff',
+        weight: 2,
+        fillColor: '#2563eb',
+        fillOpacity: 1
+      }).addTo(state.map).bindPopup(`موقعیت شما (${state.locationLabel})`);
+      state.mapMarkers.push(uMarker);
+
+      const bounds = [[state.userLat, state.userLon]];
+      const seenCoords = {};
+      state.stores.slice(0, 15).forEach((s, idx) => {
+        if (s.lat && s.lon) {
+          const key = `${s.lat.toFixed(4)}_${s.lon.toFixed(4)}`;
+          const countAtSpot = seenCoords[key] || 0;
+          seenCoords[key] = countAtSpot + 1;
+
+          const angle = countAtSpot * 1.1;
+          const radiusOffset = countAtSpot === 0 ? 0 : 0.00045 * Math.ceil(countAtSpot / 2);
+          const adjLat = s.lat + radiusOffset * Math.cos(angle);
+          const adjLon = s.lon + radiusOffset * Math.sin(angle);
+
+          const icon = L.divIcon({
+            className: '',
+            html: `<div class="price-pin-marker ${idx === 0 ? 'top-rank' : ''}">${s.short_price_pin_fa}</div>`,
+            iconSize: [64, 26],
+            iconAnchor: [32, 13]
+          });
+          const m = L.marker([adjLat, adjLon], { icon }).addTo(state.map).bindPopup(`
+            <div style="font-family:Vazirmatn,sans-serif;direction:rtl;text-align:right;min-width:170px">
+              <div style="font-weight:700;font-size:12px">${s.shop_name} (${s.location_label})</div>
+              <div style="color:#d73948;font-weight:700;font-size:12px;margin-top:2px">${s.price_part_1_recorded_fa}</div>
+              <div style="font-size:11px;color:#475569;margin-top:2px">${s.guide_summary_fa}</div>
+              <div style="font-size:11px;color:#0f172a;margin-top:2px">${s.distance_label_fa} (${s.eta_label_fa})</div>
+            </div>
+          `);
+          state.mapMarkers.push(m);
+          bounds.push([adjLat, adjLon]);
+        }
+      });
+      if (bounds.length > 1) {
+        state.map.fitBounds(bounds, { padding: [30, 30], maxZoom: 15 });
+      }
+    }
+
+    function focusStoreOnMap(idx) {
+      const marker = state.mapMarkers[idx + 1];
+      if (!marker || !state.map) return;
+      const ll = marker.getLatLng();
+      state.map.flyTo([ll.lat, ll.lng], 16, { duration: 0.6 });
+      marker.openPopup();
+    }
+
+    function renderStoresList() {
+      const list = document.getElementById('stores-list');
+      if (!state.stores.length) {
+        list.innerHTML = `<div class="bg-white p-6 rounded-xl text-center text-slate-500 text-sm border border-slate-200">فروشگاهی یافت نشد.</div>`;
+        return;
+      }
+
+      list.innerHTML = state.stores.map((s, idx) => {
+        const inPlan = state.selectedVisitOffers.has(s.offer_id);
+        return `
+          <div class="bg-white rounded-xl p-4 border ${idx === 0 ? 'border-slate-800' : 'border-slate-200'} space-y-3">
+            <div class="flex items-start justify-between gap-2">
+              <div>
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="text-xs font-bold px-2 py-0.5 rounded bg-slate-900 text-white">#${toFaDigits(idx + 1)}</span>
+                  <h3 class="font-bold text-sm text-slate-900">${s.shop_name}</h3>
+                  <span class="text-[11px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded">${s.location_label}</span>
+                  <span class="text-[11px] text-emerald-700 font-medium">${s.fairness_label_fa}</span>
+                </div>
+                <p class="text-xs text-slate-500 mt-1">${s.guide_summary_fa || s.address} • <strong>${s.distance_label_fa} (${s.eta_label_fa})</strong></p>
+              </div>
+              <span class="text-xs font-bold text-slate-700 bg-slate-100 px-2 py-1 rounded">${s.hours_at_arrival.label_fa}</span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 bg-slate-50 p-2 rounded-lg border border-slate-100 text-xs">
+              <div><span class="text-slate-400 text-[10px] block">قیمت:</span><strong class="text-slate-900">${s.price_part_1_recorded_fa}</strong></div>
+              <div><span class="text-slate-400 text-[10px] block">به‌روزرسانی:</span><span class="text-slate-700">${s.price_part_2_age_fa}</span></div>
+              <div><span class="text-slate-400 text-[10px] block">موجودی:</span><strong class="${s.availability_status === 'confirmed_in_stock' ? 'text-emerald-700' : 'text-slate-700'}">${s.price_part_3_availability_fa}</strong></div>
+            </div>
+
+            <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
+              <div class="flex flex-wrap gap-2">
+                <button
+                  onclick="negotiateFairPrice('${s.shop_id}', ${s.suggested_counter_offer_toman || 0})"
+                  class="torob-bg text-white text-xs font-bold px-3.5 py-2 rounded-lg"
+                >
+                  استعلام موجودی و پیشنهاد قیمت (${s.suggested_counter_offer_fa})
+                </button>
+                <button
+                  onclick="openInMallGuide('${s.shop_id}')"
+                  class="bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-medium px-3 py-2 rounded-lg"
+                >
+                  راهنمای پاساژ و ساعت کاری
+                </button>
+              </div>
+              <button
+                onclick="toggleVisitStop('${s.offer_id}')"
+                class="text-xs font-medium px-3 py-2 rounded-lg border ${inPlan ? 'bg-slate-900 text-white border-slate-900' : 'text-slate-600 border-slate-200'}"
+              >
+                ${inPlan ? 'در برنامه مسیر' : '+ افزودن به مسیر'}
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function toggleStoreComparisonTable() {
+      const box = document.getElementById('store-comparison-box');
+      if (!box.classList.contains('hidden')) {
+        box.classList.add('hidden');
+        return;
+      }
+      const topStores = state.stores.slice(0, 4);
+      if (!topStores.length) return;
+      box.classList.remove('hidden');
+      box.innerHTML = `
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="font-bold text-xs text-slate-900">مقایسه مستقیم فروشگاه‌های برتر</h3>
+          <button onclick="document.getElementById('store-comparison-box').classList.add('hidden')" class="text-xs text-slate-400">بستن</button>
+        </div>
+        <table class="w-full text-xs border-collapse">
+          <thead>
+            <tr class="border-b border-slate-200 bg-slate-50">
+              <th class="p-2 text-right text-slate-600">معیار</th>
+              ${topStores.map((s, i) => `<th class="p-2 text-right font-bold text-slate-900">#${toFaDigits(i+1)} ${s.shop_name}</th>`).join('')}
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-b border-slate-100"><td class="p-2 text-slate-500">قیمت</td>${topStores.map(s => `<td class="p-2 font-bold text-red-600">${s.price_part_1_recorded_fa}</td>`).join('')}</tr>
+            <tr class="border-b border-slate-100"><td class="p-2 text-slate-500">فاصله و زمان رسیدن</td>${topStores.map(s => `<td class="p-2">${s.distance_label_fa} (${s.eta_label_fa})</td>`).join('')}</tr>
+            <tr class="border-b border-slate-100"><td class="p-2 text-slate-500">ساعت کاری هنگام رسیدن</td>${topStores.map(s => `<td class="p-2">${s.hours_at_arrival.label_fa}</td>`).join('')}</tr>
+            <tr class="border-b border-slate-100"><td class="p-2 text-slate-500">شرایط قسطی</td>${topStores.map(s => `<td class="p-2">${s.installment_label_fa}</td>`).join('')}</tr>
+            <tr><td class="p-2 text-slate-500">پاساژ و واحد</td>${topStores.map(s => `<td class="p-2">${s.guide_summary_fa}</td>`).join('')}</tr>
+          </tbody>
+        </table>
+      `;
+    }
+
+    async function openInMallGuide(shopId) {
+      openModal('mall-modal');
+      const body = document.getElementById('mall-modal-body');
+      body.innerHTML = 'در حال بارگذاری...';
+
+      const r = await fetch(`/api/stores/${shopId}/mall-guide`);
+      const g = await r.json();
+      document.getElementById('mall-modal-title').textContent = `راهنمای «${g.shop_name}»`;
+
+      body.innerHTML = `
+        <div class="bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-2">
+          <div class="font-bold text-slate-900">${g.mall_name}</div>
+          <div class="grid grid-cols-2 gap-2">
+            <div class="bg-white p-2 rounded border border-slate-100">طبقه: <strong>${g.floor}</strong></div>
+            <div class="bg-white p-2 rounded border border-slate-100">واحد / پلاک: <strong>${g.unit}</strong></div>
+          </div>
+        </div>
+        <ol class="list-decimal pr-5 space-y-1 text-slate-700">${(g.guide_steps_fa || []).map(st => `<li>${st}</li>`).join('')}</ol>
+        <div class="bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-1">
+          <div class="font-bold text-slate-800 flex items-center justify-between">
+            <span>راهنمای پاساژ:</span>
+            <a href="${g.google_search_url}" target="_blank" class="text-blue-700 underline">جستجو در گوگل</a>
+          </div>
+          <p class="text-slate-600 leading-relaxed">${g.google_mall_tip_fa || ''}</p>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-[11px]">
+          ${(g.weekly_schedule_fa || []).map(d => `<div class="p-1.5 rounded border border-slate-200 bg-slate-50"><strong>${d.day}:</strong> ${d.hours_fa}</div>`).join('')}
+        </div>
+      `;
+    }
+
+    async function negotiateFairPrice(shopId, targetPriceToman) {
+      await startContactFlow([shopId], 'negotiate_price', null, targetPriceToman || state.fairMarketPriceToman);
+    }
+
+    async function contactTopStores(count = 3) {
+      const topIds = state.stores.slice(0, count).map(s => s.shop_id);
+      if (!topIds.length) return;
+      await startContactFlow(topIds, 'all', null, null);
+    }
+
+    async function startContactFlow(shopIds, intent = 'all', customMsg = null, proposedPrice = null) {
+      if (!state.activeProductId) return;
+      switchTab('contact');
+      const r = await fetch('/api/contact/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          shop_ids: shopIds,
+          product_id: state.activeProductId,
+          intent: intent,
+          custom_message: customMsg,
+          proposed_price_toman: proposedPrice
+        })
+      });
+      const data = await r.json();
+      const newIds = (data.conversations || []).map(c => c.conversation_id);
+      state.conversationIds = Array.from(new Set([...newIds, ...state.conversationIds]));
+      document.getElementById('contact-tab-count').textContent = toFaDigits(state.conversationIds.length);
+
+      if (state.pollTimer) clearInterval(state.pollTimer);
+      await pollSellerStatuses();
+      state.pollTimer = setInterval(pollSellerStatuses, 1200);
+    }
+
+    async function pollSellerStatuses() {
+      if (!state.conversationIds.length) return;
+      const r = await fetch('/api/contact/poll', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          conversation_ids: state.conversationIds,
+          user_lat: state.userLat,
+          user_lon: state.userLon
+        })
+      });
+      const data = await r.json();
+      renderConversations(data);
+
+      const allDone = (data.conversations || []).every(c => c.status !== 'delivered');
+      if (allDone && state.pollTimer) {
+        clearInterval(state.pollTimer);
+        state.pollTimer = null;
+        if (state.activeProductId) {
+          loadStoresForProduct(state.activeProductId, state.activeProductTitle, false);
+        }
+      }
+    }
+
+    function renderConversations(data) {
+      const list = document.getElementById('conversations-list');
+      const convs = data.conversations || [];
+
+      list.innerHTML = convs.map(c => {
+        const badgeStyle =
+          c.status === 'confirmed'
+            ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+            : c.status === 'out_of_stock'
+            ? 'bg-red-50 text-red-800 border-red-200'
+            : c.status === 'no_reply'
+            ? 'bg-amber-50 text-amber-800 border-amber-200'
+            : 'bg-slate-100 text-slate-700 border-slate-200';
+
+        const inPlan = c.offer_id && state.selectedVisitOffers.has(c.offer_id);
+        const replyBoxStyle = c.status === 'confirmed'
+          ? 'bg-emerald-50/70 border-emerald-200 text-slate-900'
+          : 'bg-red-50/60 border-red-200 text-red-900';
+
+        return `
+          <div class="bg-white rounded-xl p-4 border ${c.status === 'confirmed' ? 'border-emerald-400 ring-1 ring-emerald-100' : 'border-slate-200'} space-y-2.5">
+            <div class="flex items-center justify-between gap-2">
+              <div>
+                <h3 class="font-bold text-sm text-slate-900">${c.shop_name} <span class="text-xs font-normal text-slate-500">(${c.location_label})</span></h3>
+                <p class="text-[11px] text-slate-500 mt-0.5">${c.product_title || ''} • ${c.guide_summary_fa || ''}</p>
+              </div>
+              <span class="text-xs px-2.5 py-0.5 rounded border font-bold shrink-0 ${badgeStyle}">${c.status_label_fa}</span>
+            </div>
+
+            <div class="bg-slate-50 p-2.5 rounded-lg text-xs text-slate-600">${c.user_message}</div>
+
+            ${c.seller_reply ? `
+              <div class="${replyBoxStyle} p-3 rounded-lg text-xs border space-y-2">
+                <div><strong>پاسخ فروشنده:</strong> ${c.seller_reply}</div>
+                ${c.confirmed_price_fa ? `
+                  <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-emerald-200/80">
+                    <div class="font-bold text-emerald-800 text-xs sm:text-sm">
+                      قیمت نهایی تأییدشده: ${c.confirmed_price_fa} <span class="text-xs font-normal">(${c.parsed_result?.unit_info || ''})</span>
+                    </div>
+
+                    <!-- Pipeline Action Buttons to Finalize In-Person Visit! -->
+                    <div class="flex flex-wrap items-center gap-1.5">
+                      ${c.offer_id ? `
+                        <button
+                          onclick="finalizeConfirmedStoreToPlan('${c.offer_id}')"
+                          class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold px-3.5 py-2 rounded-lg shadow-xs transition flex items-center gap-1.5"
+                        >
+                          <span>${inPlan ? 'مشاهده در برنامه مسیر مراجعه ←' : '+ ذخیره در برنامه مسیر و نهایی‌سازی مراجعه'}</span>
+                        </button>
+                      ` : ''}
+                      <button
+                        onclick="openInMallGuide('${c.shop_id}')"
+                        class="bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 text-xs font-medium px-3 py-2 rounded-lg transition"
+                      >
+                        راهنمای داخل پاساژ و واحد
+                      </button>
+                      ${c.lat && c.lon ? `
+                        <a
+                          href="https://neshan.org/maps/@${c.lat},${c.lon},16z"
+                          target="_blank"
+                          class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium px-3 py-2 rounded-lg transition"
+                        >
+                          مسیریابی مستقیم (نشان)
+                        </a>
+                      ` : ''}
+                    </div>
+                  </div>
+                ` : ''}
+              </div>
+            ` : ''}
+
+            ${(c.status === 'out_of_stock' || c.status === 'no_reply') ? `
+              <div class="flex items-center justify-between pt-1 text-xs text-amber-800">
+                <span>این فروشگاه در دسترس نیست؛ می‌توانید از جایگزین‌های پایین صفحه استعلام بگیرید.</span>
+                <button onclick="document.getElementById('failover-alternatives-box')?.scrollIntoView({behavior:'smooth'})" class="font-bold underline">
+                  مشاهده جایگزین‌ها ↓
+                </button>
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }).join('');
+
+      const failBox = document.getElementById('failover-alternatives-box');
+      if (data.has_failures && (data.replacement_stores?.length || data.similar_models?.length)) {
+        failBox.classList.remove('hidden');
+        document.getElementById('replacement-stores-list').innerHTML = (data.replacement_stores || []).map(st => `
+          <div class="bg-white rounded-lg p-3 border border-amber-300 flex items-center justify-between gap-2 text-xs">
+            <div>
+              <div class="font-bold text-slate-900">${st.shop_name} (${st.location_label})</div>
+              <div class="text-slate-600 mt-0.5">${st.price_part_1_recorded_fa} • ${st.distance_label_fa}</div>
+            </div>
+            <button onclick="negotiateFairPrice('${st.shop_id}', ${st.suggested_counter_offer_toman || 0})" class="torob-bg text-white font-bold px-3 py-1.5 rounded-lg shrink-0">
+              استعلام از جایگزین
+            </button>
+          </div>
+        `).join('');
+
+        document.getElementById('similar-models-list').innerHTML = (data.similar_models || []).length ? `
+          <div class="text-xs font-bold text-amber-900">مدل‌های مشابه موجود:</div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            ${data.similar_models.map(sm => `
+              <div class="bg-white p-2.5 rounded-lg border border-amber-200 flex items-center justify-between gap-2 text-xs">
+                <div class="truncate">
+                  <div class="font-bold text-slate-800 truncate">${sm.persian_title}</div>
+                  <div class="text-red-600">${sm.price_range_fa}</div>
+                </div>
+                <button onclick="loadStoresForProduct('${sm.product_id}', '${safeStr(sm.persian_title)}', true)" class="bg-slate-900 text-white px-2.5 py-1 rounded text-[11px] shrink-0">مشاهده</button>
+              </div>
+            `).join('')}
+          </div>
+        ` : '';
+      } else {
+        failBox.classList.add('hidden');
+      }
+    }
+
+    async function finalizeConfirmedStoreToPlan(offerId) {
+      if (offerId) {
+        state.selectedVisitOffers.add(offerId);
+        document.getElementById('plan-tab-count').textContent = toFaDigits(state.selectedVisitOffers.size);
+      }
+      switchTab('plan');
+    }
+
+    function toggleVisitStop(offerId) {
+      if (state.selectedVisitOffers.has(offerId)) state.selectedVisitOffers.delete(offerId);
+      else state.selectedVisitOffers.add(offerId);
+      document.getElementById('plan-tab-count').textContent = toFaDigits(state.selectedVisitOffers.size);
+      renderStoresList();
+    }
+
+    async function loadVisitPlan() {
+      let offerIds = Array.from(state.selectedVisitOffers);
+      if (!offerIds.length && state.stores.length) offerIds = state.stores.slice(0, 3).map(s => s.offer_id);
+      if (!offerIds.length) return;
+
+      const travelMode = document.getElementById('filter-travel').value;
+      const r = await fetch('/api/plan/visit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ offer_ids: offerIds, user_lat: state.userLat, user_lon: state.userLon, travel_mode: travelMode })
+      });
+      const data = await r.json();
+      state.lastVisitShareText = data.share_text_fa || '';
+
+      document.getElementById('plan-warnings-box').innerHTML = (data.warnings_fa || []).map(w => `
+        <div class="bg-amber-50 border border-amber-200 text-amber-900 text-xs px-3 py-2 rounded-lg">${w}</div>
+      `).join('');
+
+      document.getElementById('visit-plan-stops').innerHTML = (data.stops || []).map(st => `
+        <div class="bg-white rounded-xl p-4 border border-slate-200 space-y-2 text-xs">
+          <div class="flex items-center justify-between">
+            <h3 class="font-bold text-sm text-slate-900">${toFaDigits(st.step)}. ${st.shop_name}</h3>
+            <span class="bg-slate-100 text-slate-800 px-2.5 py-1 rounded font-bold">ساعت رسیدن: ${st.arrival_time_fa}</span>
+          </div>
+          <p class="text-slate-600">${st.mall_guide_fa}</p>
+          <div class="flex gap-2 pt-2 border-t border-slate-100">
+            <a href="${st.neshan_url}" target="_blank" class="bg-blue-600 text-white px-3 py-1.5 rounded-lg">مسیریابی در نشان</a>
+            <a href="${st.balad_url}" target="_blank" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg">مسیریابی در بلد</a>
+            <a href="${st.google_maps_url}" target="_blank" class="bg-slate-800 text-white px-3 py-1.5 rounded-lg">گوگل مپ</a>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function shareVisitPlan() {
+      if (state.lastVisitShareText) {
+        navigator.clipboard.writeText(state.lastVisitShareText);
+        alert('برنامه مسیر کپی شد.');
+      }
+    }
+
+    function renderLocationPickerModal() {
+      document.getElementById('cities-grid').innerHTML = state.cities.map(c => `
+        <button onclick="selectCity('${c.name_fa}', ${c.active})" class="p-2 rounded-lg border text-xs font-bold ${state.selectedCity === c.name_fa ? 'border-red-500 bg-red-50 text-red-700' : 'border-slate-200 text-slate-700'}">${c.name_fa}</button>
+      `).join('');
+
+      document.getElementById('neighborhoods-grid').innerHTML = state.neighborhoods.map(n => `
+        <button onclick="selectNeighborhood('${safeStr(n.location_label)}', ${n.center_lat}, ${n.center_lon}, '${safeStr(n.location_label)}')" class="text-right p-2 rounded-lg border border-slate-200 hover:border-red-400 text-xs">
+          <div class="font-bold text-slate-800 truncate">${n.location_label}</div>
+          <div class="text-[10px] text-slate-400">${toFaDigits(n.shop_count)} فروشگاه</div>
+        </button>
+      `).join('');
+    }
+
+    function selectCity(cityName, isActive) {
+      const notice = document.getElementById('city-notice');
+      if (!isActive) {
+        notice.textContent = 'دیتاست فعلی مسابقه مخصوص فروشگاه‌های شهر تهران است. نمایش روی تهران تنظیم شد.';
+        notice.classList.remove('hidden');
+      } else {
+        notice.classList.add('hidden');
+      }
+      state.selectedCity = 'تهران';
+      renderLocationPickerModal();
+    }
+
+    function selectNeighborhood(label, lat, lon, filterKey) {
+      state.locationLabel = label;
+      state.userLat = lat;
+      state.userLon = lon;
+      state.neighborhoodFilter = filterKey || label;
+      document.getElementById('current-loc-label').textContent = `تهران • ${label}`;
+      closeModal('loc-modal');
+      onFilterChange();
+    }
+
+    function useBrowserGPS() {
+      if (!navigator.geolocation) return;
+      navigator.geolocation.getCurrentPosition(pos => {
+        selectNeighborhood('موقعیت GPS', pos.coords.latitude, pos.coords.longitude, 'ALL');
+      });
+    }
+
+    function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+    function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+    window.addEventListener('DOMContentLoaded', initApp);
+  </script>
+</body>
+</html>
