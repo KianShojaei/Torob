@@ -11,7 +11,6 @@ frontend/.next
 frontend/out
 backend/static
 backend/var
-data/*.csv
 data/*.zip
 reports
 *.log

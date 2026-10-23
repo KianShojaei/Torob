@@ -70,6 +70,12 @@ Notes that matter on free/tiny plans:
   `liara.json` maps it. If your plan injects `PORT`, change the CMD to
   `uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}`.
 
+### Real data in the image
+
+`docker build` bakes `./data/*.csv` when `shops.csv`, `products.csv` and `offers.csv` are present
+and falls back to the synthetic dataset otherwise. The ETL runs **at build time**, so the container
+still starts in ~1.5 s. Nothing data-related goes into git.
+
 ### Verify the deployment
 
 ```bash
@@ -116,7 +122,8 @@ stays clean (the build prints a harmless "rewrites will not be applied" warning 
 | `LLM_MODEL` | `claude-sonnet-4-5` | model id; any model of the provider |
 | `LLM_BASE_URL` | – | for OpenAI-compatible gateways / proxies |
 | `DATA_DIR` | `./data` | CSV drop-in folder |
-| `DB_PATH` | `./backend/var/app.db` | serving DB |
+| `DB_PATH` | `./backend/var/app.db` | serving DB (the container copies the baked DB here on first run if the path is empty) |
+| `PORT` | `8000` | respected by the container CMD and the health check |
 | `DB_URL` | – | PostgreSQL URL (optional alternative) |
 | `SNAPSHOT_DATE` | `2026-10-13` | reference date for price age / hours |
 | `DEMO_MODE` | `true` | exposes simulation badges and the time scale |
