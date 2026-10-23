@@ -2,6 +2,16 @@
 node_modules/
 .pnpm-store/
 
+# python venvs (custom name so the toolchain persists between sessions)
+.deps/
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
 # next / build
 .next/
 out/
@@ -16,23 +26,17 @@ build/
 .env.production
 !.env.example
 
-# data (حجیم — در ریپو کامیت نمی‌شود)
+# data (heavy — never commit). See /data/README.md
 data/*
 !data/README.md
 *.zip
 *.csv
 
-# گزارش‌های تولیدشده
+# generated artifacts
+backend/var/
+backend/static/
 reports/
-
-# python
-__pycache__/
-*.py[cod]
-.venv/
-venv/
-.mypy_cache/
-.ruff_cache/
-.pytest_cache/
+etl-report.json
 
 # os / editor
 .DS_Store

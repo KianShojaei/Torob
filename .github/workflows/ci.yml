@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches: [main, "arena/**"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  backend:
+    name: Backend (tests + ETL validation)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r backend/requirements.txt
+      - name: Generate demo dataset
+        run: cd backend && python -m app.etl.synthetic --out ../data --shops 400 --products 4000 --offers 9000
+      - name: Build serving DB
+        run: cd backend && python -m app.etl.build --data ../data --db var/app.db
+      - name: Validate ETL output
+        run: cd backend && python -m app.etl.validate --db var/app.db
+      - name: Tests (unit + API + agent evals)
+        run: cd backend && python -m pytest -q
+
+  frontend:
+    name: Frontend (typecheck + build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: cd frontend && npm ci --no-audit --no-fund
+      - run: cd frontend && npx tsc --noEmit
+      - run: cd frontend && npm run build
+
+  docker:
+    name: Docker image builds
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t torbgard:ci .
+      - name: Container smoke test
+        run: |
+          docker run -d --name tg -p 8000:8000 torbgard:ci
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8000/api/health | grep -q '"db_ready":true'; then break; fi
+            sleep 2
+          done
+          BASE_URL=http://127.0.0.1:8000 ./scripts/smoke.sh
+          docker logs tg | tail -20
+          docker rm -f tg

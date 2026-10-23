@@ -1,0 +1,14 @@
+{
+  "platform": "docker",
+  "app": "torbgard",
+  "port": 8000,
+  "healthCheck": {
+    "command": "curl -fsS http://localhost:8000/api/health"
+  },
+  "env": {
+    "LLM_PROVIDER": "none",
+    "SNAPSHOT_DATE": "2026-10-13",
+    "DEMO_TIME_SCALE": "20",
+    "CONTACT_TIMEOUT_SECONDS": "45"
+  }
+}
