@@ -1,0 +1,133 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  background: #f6f8fb;
+}
+
+body {
+  @apply bg-[#f6f8fb] text-ink-900 antialiased;
+  font-feature-settings: "ss01";
+}
+
+/* numbers stay LTR even inside RTL text */
+.num {
+  direction: ltr;
+  unicode-bidi: isolate;
+  font-variant-numeric: tabular-nums;
+}
+
+.sheet-scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.sheet-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.hairline {
+  box-shadow: inset 0 -1px 0 rgba(11, 18, 32, 0.06);
+}
+
+.glass {
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(14px) saturate(140%);
+}
+
+.chip {
+  @apply inline-flex shrink-0 items-center gap-1 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[13px] text-ink-700 transition active:scale-[.97];
+}
+.chip[data-on="true"] {
+  @apply border-brand-600 bg-brand-600 text-white shadow-sm;
+}
+.chip[data-tone="muted"] {
+  @apply bg-slate-100 text-ink-500;
+}
+
+.btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-3 text-[15px] font-semibold transition active:scale-[.98] disabled:opacity-50;
+}
+.btn-primary {
+  @apply btn bg-brand-600 text-white shadow-[0_8px_20px_-8px_rgba(10,131,101,.8)];
+}
+.btn-ghost {
+  @apply btn border border-slate-200 bg-white text-ink-700;
+}
+.btn-soft {
+  @apply btn bg-brand-50 text-brand-700;
+}
+
+.card {
+  @apply rounded-xl2 border border-slate-100 bg-white shadow-card;
+}
+
+.skeleton {
+  @apply relative overflow-hidden rounded-lg bg-slate-100;
+}
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.7), transparent);
+  animation: shimmer 1.4s infinite;
+}
+@keyframes shimmer {
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+.badge {
+  @apply inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-medium leading-none;
+}
+.badge-fresh { @apply bg-brand-50 text-brand-700; }
+.badge-recent { @apply bg-slate-100 text-ink-500; }
+.badge-old { @apply bg-warn-50 text-warn-500; }
+.badge-stale { @apply bg-danger-50 text-danger-500; }
+.badge-unknown { @apply bg-slate-100 text-ink-500; }
+
+.leaflet-container {
+  font-family: inherit;
+  background: #e8eef5;
+  direction: ltr;
+}
+.leaflet-popup-content {
+  margin: 8px 10px;
+  direction: rtl;
+  font-family: Vazirmatn, sans-serif;
+  font-size: 12px;
+}
+.price-pin {
+  background: #0a8365;
+  color: #fff;
+  border-radius: 999px;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px -4px rgba(10, 131, 101, 0.9);
+  border: 2px solid #fff;
+}
+.price-pin.selected {
+  background: #f59e0b;
+  box-shadow: 0 4px 14px -4px rgba(245, 158, 11, 0.9);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}

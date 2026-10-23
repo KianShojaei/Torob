@@ -1,0 +1,14 @@
+{
+  "name": "ترب‌گرد — دستیار خرید حضوری",
+  "short_name": "ترب‌گرد",
+  "description": "انتخاب مدل، پیدا کردن فروشگاه نزدیک، تأیید قیمت و موجودی از فروشنده",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f6f8fb",
+  "theme_color": "#0a8365",
+  "lang": "fa",
+  "dir": "rtl",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
