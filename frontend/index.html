@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>دستیار خرید حضوری ترب</title>
+  <link rel="icon" type="image/png" href="/logo.png" />
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet" type="text/css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -57,7 +58,7 @@
   <header class="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-slate-200">
     <div class="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between gap-3">
       <div class="flex items-center gap-2.5">
-        <div class="w-8 h-8 rounded-lg torob-bg flex items-center justify-center text-white font-bold text-base">ت</div>
+        <img src="/logo.png" alt="لوگوی دستیار ترب" class="w-10 h-10 object-contain drop-shadow-xs shrink-0" />
         <h1 class="font-bold text-sm sm:text-base text-slate-900">دستیار خرید حضوری ترب</h1>
       </div>
 
@@ -69,20 +70,69 @@
       </div>
     </div>
 
-    <!-- Clean 4 Tabs -->
-    <div class="max-w-5xl mx-auto px-4 flex border-t border-slate-100 overflow-x-auto no-scrollbar text-xs font-medium">
-      <button onclick="switchTab('discover')" id="tab-discover" class="py-2.5 px-4 border-b-2 border-red-600 text-red-600 font-bold whitespace-nowrap">
-        ۱. پیشنهاد کالا و نقشه
-      </button>
-      <button onclick="switchTab('stores')" id="tab-stores" class="py-2.5 px-4 border-b-2 border-transparent text-slate-600 whitespace-nowrap">
-        ۲. فروشگاه‌های تهران (<span id="stores-tab-count">۰</span>)
-      </button>
-      <button onclick="switchTab('contact')" id="tab-contact" class="py-2.5 px-4 border-b-2 border-transparent text-slate-600 whitespace-nowrap">
-        ۳. استعلام و پیشنهاد قیمت (<span id="contact-tab-count">۰</span>)
-      </button>
-      <button onclick="switchTab('plan')" id="tab-plan" class="py-2.5 px-4 border-b-2 border-transparent text-slate-600 whitespace-nowrap">
-        ۴. برنامه مسیر (<span id="plan-tab-count">۰</span>)
-      </button>
+    <!-- Modern Centered Stepper Pipeline with Boxes & Arrows -->
+    <div class="border-t border-slate-100 bg-slate-50/70 py-2.5 px-3">
+      <div class="max-w-5xl mx-auto flex items-center justify-start sm:justify-center gap-1.5 sm:gap-2.5 overflow-x-auto no-scrollbar">
+
+        <!-- Step 1 -->
+        <button
+          onclick="switchTab('discover')"
+          id="tab-discover"
+          class="group flex items-center gap-2 px-3.5 py-2 rounded-xl border text-xs font-bold whitespace-nowrap transition-all duration-150 torob-bg text-white border-red-600 shadow-sm"
+        >
+          <span id="step-badge-discover" class="w-5 h-5 rounded-lg flex items-center justify-center text-[11px] font-extrabold bg-white/20 text-white">۱</span>
+          <span>پیشنهاد کالا و نقشه</span>
+        </button>
+
+        <!-- RTL Arrow 1 -> 2 -->
+        <div class="text-slate-300 shrink-0 px-0.5">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>
+        </div>
+
+        <!-- Step 2 -->
+        <button
+          onclick="switchTab('stores')"
+          id="tab-stores"
+          class="group flex items-center gap-2 px-3.5 py-2 rounded-xl border text-xs font-medium whitespace-nowrap transition-all duration-150 bg-white hover:bg-slate-100 text-slate-700 border-slate-200/90 shadow-2xs"
+        >
+          <span id="step-badge-stores" class="w-5 h-5 rounded-lg flex items-center justify-center text-[11px] font-bold bg-slate-100 text-slate-600">۲</span>
+          <span>فروشگاه‌های تهران</span>
+          <span class="px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-700" id="stores-tab-count">۰</span>
+        </button>
+
+        <!-- RTL Arrow 2 -> 3 -->
+        <div class="text-slate-300 shrink-0 px-0.5">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>
+        </div>
+
+        <!-- Step 3 -->
+        <button
+          onclick="switchTab('contact')"
+          id="tab-contact"
+          class="group flex items-center gap-2 px-3.5 py-2 rounded-xl border text-xs font-medium whitespace-nowrap transition-all duration-150 bg-white hover:bg-slate-100 text-slate-700 border-slate-200/90 shadow-2xs"
+        >
+          <span id="step-badge-contact" class="w-5 h-5 rounded-lg flex items-center justify-center text-[11px] font-bold bg-slate-100 text-slate-600">۳</span>
+          <span>استعلام و پیشنهاد قیمت</span>
+          <span class="px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-700" id="contact-tab-count">۰</span>
+        </button>
+
+        <!-- RTL Arrow 3 -> 4 -->
+        <div class="text-slate-300 shrink-0 px-0.5">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>
+        </div>
+
+        <!-- Step 4 -->
+        <button
+          onclick="switchTab('plan')"
+          id="tab-plan"
+          class="group flex items-center gap-2 px-3.5 py-2 rounded-xl border text-xs font-medium whitespace-nowrap transition-all duration-150 bg-white hover:bg-slate-100 text-slate-700 border-slate-200/90 shadow-2xs"
+        >
+          <span id="step-badge-plan" class="w-5 h-5 rounded-lg flex items-center justify-center text-[11px] font-bold bg-slate-100 text-slate-600">۴</span>
+          <span>برنامه مسیر</span>
+          <span class="px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-700" id="plan-tab-count">۰</span>
+        </button>
+
+      </div>
     </div>
   </header>
 
@@ -156,7 +206,7 @@
 
     <!-- Single-Line Clean AI Guidance Box -->
     <section class="bg-white border border-slate-200 rounded-xl px-4 py-3 flex items-center gap-3">
-      <div class="w-6 h-6 rounded-md bg-slate-900 text-white flex items-center justify-center text-[11px] font-bold shrink-0">AI</div>
+      <img src="/logo.png" alt="AI" class="w-7 h-7 object-contain shrink-0" />
       <div id="agent-reply-text" class="text-xs sm:text-sm text-slate-800 leading-relaxed flex-1">
         در حال آماده‌سازی پیشنهادها...
       </div>
@@ -408,10 +458,16 @@
       ['discover', 'stores', 'contact', 'plan'].forEach(t => {
         document.getElementById(`view-${t}`).classList.toggle('hidden', t !== tab);
         const btn = document.getElementById(`tab-${t}`);
+        const stepBadge = document.getElementById(`step-badge-${t}`);
+        const countBadge = document.getElementById(`${t}-tab-count`);
         if (t === tab) {
-          btn.className = 'py-2.5 px-4 border-b-2 border-red-600 text-red-600 font-bold whitespace-nowrap';
+          btn.className = 'group flex items-center gap-2 px-3.5 py-2 rounded-xl border text-xs font-bold whitespace-nowrap transition-all duration-150 torob-bg text-white border-red-600 shadow-sm';
+          if (stepBadge) stepBadge.className = 'w-5 h-5 rounded-lg flex items-center justify-center text-[11px] font-extrabold bg-white/20 text-white';
+          if (countBadge) countBadge.className = 'px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-white/25 text-white';
         } else {
-          btn.className = 'py-2.5 px-4 border-b-2 border-transparent text-slate-600 whitespace-nowrap';
+          btn.className = 'group flex items-center gap-2 px-3.5 py-2 rounded-xl border text-xs font-medium whitespace-nowrap transition-all duration-150 bg-white hover:bg-slate-100 text-slate-700 border-slate-200/90 shadow-2xs';
+          if (stepBadge) stepBadge.className = 'w-5 h-5 rounded-lg flex items-center justify-center text-[11px] font-bold bg-slate-100 text-slate-600';
+          if (countBadge) countBadge.className = 'px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-700';
         }
       });
       if (tab === 'discover') {

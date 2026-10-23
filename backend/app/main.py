@@ -73,6 +73,13 @@ class AgentChatRequest(BaseModel):
     message: str
     context: dict[str, Any] = {}
 
+@app.get("/logo.png")
+def serve_logo():
+    logo_file = Path("frontend/logo.png")
+    if logo_file.exists():
+        return FileResponse(str(logo_file), media_type="image/png")
+    return HTMLResponse("", status_code=404)
+
 @app.get("/", response_class=HTMLResponse)
 def serve_frontend():
     if FRONTEND_HTML.exists():
