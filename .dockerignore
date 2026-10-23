@@ -1,6 +1,7 @@
-.git
+# keep the build context small
 .deps
 .venv
+venv
 **/__pycache__
 **/*.pyc
 .pytest_cache
@@ -11,9 +12,11 @@ frontend/.next
 frontend/out
 backend/static
 backend/var
-data/*.zip
 reports
+.git
+.github
+docs
+*.zip
 *.log
 .env
-.env.*
 !.env.example

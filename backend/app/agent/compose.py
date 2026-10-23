@@ -18,7 +18,7 @@ def fa(value) -> str:
 def money(value: float | None) -> str:
     if value is None:
         return "نامشخص"
-    return fa(f"{int(value):,}") + " تومان"
+    return fa(f"{int(value):,}").replace(",", "٬") + " تومان"
 
 
 def price_range(lo, hi) -> str:

@@ -1,64 +1,113 @@
-# Judging cheat sheet
+# Judging map — where each rubric point lives
 
-One page. Left: what the rubric asks. Right: where to click, and which file proves it.
+> Scoring per the brief: Product 75 · UX 75 · Intelligence 50 · Deployment 40 · Technical 40 ·
+> Dataset 20. This page is a fast path: **claim → screen → file**.
 
-| # | Criterion (points) | Where to look | Proof in the repo |
-|---|---|---|---|
-| 1 | **Product thinking (75)** — does it solve the real problem end-to-end? | Home → results → shops → store → contact → alternatives → plan. Nothing requires the chat. | `docs/01-challenge-analysis.md`, `frontend/components/*.tsx` |
-| 1a | Discovery → decision | «هدفون بلوتوثی زیر ۳ میلیون» → 3 models with `reasons[]` | `agent/tools.py::recommend_models` |
-| 1b | Store choice with price/distance/hours | Shops screen; sort chips; score breakdown bars | `services/stores.py`, `StoreDetail.tsx` |
-| 1c | Contact for live price/stock | Contact center stepper; parsed answer grid | `simulator/engine.py`, `ContactCenter.tsx` |
-| 1d | Alternatives when no reply/closed | Timeout card → 3 alternatives; closed-at-arrival warning | `agent/tools.py::suggest_alternatives` |
-| 1e | In-mall guidance | Store detail → «راهنمای داخل پاساژ» + confidence + say-this sentence | `services/address.py` |
-| 1f | Installment-only filter | Filter sheet, hard-excludes unconfirmed shops | `services/stores.py::StoreFilters` |
-| 2 | **UX (75)** — Persian, RTL, mobile-first, transparent | Every screen; `dir="rtl"`, Vazirmatn, 44px targets, bottom nav, PWA installable | `app/layout.tsx`, `app/globals.css`, `public/manifest.webmanifest` |
-| 2a | Honest unknown states | Search for «نامشخص» across screens; «موجودی نامشخص», «ساعت نامشخص», «اطمینان آدرس» | `ui.tsx::AvailabilityBadge/OpenBadge` |
-| 2b | No dead ends | Empty state offers «شعاع را بیشتر کنم یا فیلتر اقساط را بردارم؟» | `Stores.tsx` |
-| 3 | **Intelligence (50)** — agentic behaviour, not a chatbot | Agent FAB: tool trace, cards, navigation; follow-up turns | `agent/orchestrator.py`, `ChatPanel.tsx` |
-| 3a | Tool calling | 11 typed tools, schemas exposed to the LLM | `agent/tools.py::TOOLS` |
-| 3b | No hallucinated data | Guardrail strips sentences with untraceable numbers | `agent/guardrails.py` |
-| 3c | Degrades gracefully | `LLM_PROVIDER=none` → same screens, `degraded: true` badge | `agent/orchestrator.py` |
-| 3d | Persian NLU | «قسطی»، «تا ۲۰ میلیون»، «بین ۲ تا ۴»، ZWNJ-safe keywords | `agent/understand.py`, `test_agent.py` |
-| 4 | **Deployment (40)** | `/api/docs`, `/api/health`, `smoke.sh`, Dockerfile, Liara runbook | `Dockerfile`, `docs/DEPLOY.md`, `.github/workflows/ci.yml` |
-| 4a | Public instance | Liara app URL in README/demo | `docs/DEPLOY.md#1-liara-public-instance` |
-| 4b | One lean container | static PWA served by FastAPI, ~90 MB RSS, no Node at runtime | `app/main.py` |
-| 5 | **Technical quality (40)** | 80 tests, typed boundaries, ETL validation in CI | `backend/app/tests/*`, `etl/validate.py` |
-| 5b | Deterministic demo | seeded personas, time compression, prebuilt DB | `simulator/persona.py`, `config.py` |
-| 6 | **Dataset mastery (20)** | Every pathology has a rule and a label | `docs/DATA.md` |
+## 60-second verification
+
+```bash
+make serve          # or open the deployed Liara URL
+./scripts/smoke.sh  # 10 contract checks, non-zero on failure
+```
+
+Then, on a phone-sized window:
+
+1. Home → «هدفون بلوتوثی زیر ۳ میلیون» → results.
+2. Any card → «فروشگاه‌ها» → filter «فقط باز الان».
+3. Open a shop → «راهنمای مسیر داخل پاساژ» (or its low-confidence variant).
+4. «پرسش قیمت و موجودی» → watch the timeline → parsed chips.
+5. Let a silent shop time out → alternatives appear.
+6. «برنامه سفر» → ordered stops + warnings.
+
+If those six work, the core rubric is satisfied.
 
 ---
 
-## Five questions a judge will ask
+## Product (75)
 
-**«قیمت را از کجا می‌آورید؟»**
-From `offers`, and we always show the date of that price and whether it is valid. We never show a
-price without them. `services/pricing.py`.
+| Expectation | Where | Code |
+|---|---|---|
+| Problem understood, not just a shop list | home copy + the price→decision loop | `components/Home.tsx` |
+| Guided discovery, not a blank search box | category chips, budget/usage chips, one clarifying question | `agent/understand.py`, `components/Home.tsx` |
+| Model shortlist with reasons | results cards + «چرا این؟» sheet | `agent/tools.py::recommend_models` |
+| Nearby shops with real constraints | distance, ETA, hours at arrival, installment, price age | `services/stores.py` |
+| Comparison | products and stores, cheapest highlighted | `components/CompareStores.tsx` |
+| Live confirmation | contact thread + parsed reply | `simulator/engine.py` |
+| Graceful failure | timeout → alternatives → back to the list | `components/ContactCenter.tsx` |
+| In-mall guidance | floor/unit/landmark + confidence + ask sentence | `services/address.py` |
+| Visit plan | ordered stops, warnings, route link | `components/Plan.tsx` |
 
-**«نمی‌دانید موجود است یا نه — چطور می‌فهمید؟»**
-We don't guess. `availability` is `listed` until the seller confirms. The contact flow is the only
-place a fact becomes `confirmed_*`. Category names and `last_price_changed_at` are explicitly *not*
-treated as stock proof.
+## UX (75)
 
-**«اگر فروشنده جواب ندهد؟»**
-After the timeout the thread becomes `no_reply`, the UI offers three alternatives (other shops
-first, then other models) and can rebuild the plan. `suggest_alternatives`.
+| Expectation | Where |
+|---|---|
+| Persian, RTL, mobile-first | `app/layout.tsx` (`dir="rtl"`), `app/globals.css`, Vazirmatn |
+| Persian digits and money format | `lib/format.ts` (`fa`, `money`) |
+| Thumb-reachable navigation | bottom nav + full-width actions (`components/Shell.tsx`) |
+| Price shown as **price + age + availability** | `components/ui.tsx::PriceBlock` |
+| Empty / loading / error states | skeletons, empty-state suggestions, toasts |
+| Every claim explainable | score breakdown + reasons chips on each store card |
+| No dead ends | alternatives sheet, «شعاع را زیاد کنم؟» empty state |
+| Installable PWA | `public/manifest.webmanifest`, `public/sw.js` |
 
-**«LLM چه کاری می‌کند؟ اگر قطع شود؟»**
-It plans tool calls and writes Persian copy. If it is unavailable, the same `Need` drives a
-rule-based plan, the same cards, the same SSE stream — with a visible «بدون مدل زبانی» badge.
+## Intelligence (50)
 
-**«تماس واقعی است؟»**
-No, and the UI says so on every contact screen. Real channels (`tel:`, `wa.me`, Bale deep links)
-are behind the same interface; the dataset's phone numbers are demo data, so we do not pretend.
+| Expectation | Where |
+|---|---|
+| Agent, not a chatbot | tool-calling orchestrator with 11 typed tools |
+| Visible reasoning | SSE `tool_status` chips in the chat |
+| Grounded numbers | `agent/guardrails.py` (any number not in tool output → sentence removed) |
+| Persian NLU | category/brand/budget/neighborhood/usage/installment extraction, ZWNJ-safe |
+| Follow-ups | thread status, alternatives, plan |
+| Honest degradation | `LLM_PROVIDER=none` → deterministic composer, `degraded: true` in `done` |
+| Evaluation | `app/tests/test_agent.py` — extracts → tools → cards → no invented numbers |
+
+## Deployment (40)
+
+| Expectation | Where |
+|---|---|
+| Public instance | Liara runbook: `docs/DEPLOY.md` |
+| One container | `Dockerfile` (Next static export served by FastAPI) |
+| Fast cold start | DB built at image build; ~2 s boot |
+| Low footprint | SQLite, no worker, ~120 MB RSS |
+| Observability | `/api/health`, `/api/ready`, structured logs, `/api/meta` |
+| Safe defaults | runs with no API keys; demo flags explicit |
+
+## Technical (40)
+
+| Expectation | Where |
+|---|---|
+| Clean layering | `api / agent / services / simulator / etl` |
+| Typed boundaries | Pydantic models for every tool and request body |
+| Tests | 100 tests: unit, ETL pipeline, API contract, agent evals |
+| Data build reproducible | `make synthetic && make data` (fixed seed), `etl/validate` |
+| Failure handling | tool errors never leak; API returns typed errors; SSE `error` event |
+| Docs | `docs/DATA.md`, `docs/DEPLOY.md`, `docs/DEMO_SCRIPT.md`, this file |
+
+## Dataset (20)
+
+| Pathology | Handling | Proof |
+|---|---|---|
+| `null` strings, broken JSON | tolerant readers with counters | `etl/readers.py`, tests |
+| 20k duplicate offers | keep newest, validated in CI | `etl/build.py`, `etl/validate.py` |
+| 15k null prices, absurd ranges | `price_valid` flag, never fatal | `services/pricing.py` |
+| Partial/`unsupported` hours | unknown ≠ closed, cross-midnight, day aliases | `services/hours.py` |
+| 3.4k category strings | 17 canonical + verbatim fallback | `etl/taxonomy.py` |
+| 74.5 % missing brands | `NULL`, never inferred | `etl/enrich.py` |
+| `0/0` payment limits | «نامشخص», not "unlimited" | `services/pricing.py` |
+| 19 malls, free-text addresses | parser + confidence + fallback ask sentence | `services/address.py` |
 
 ---
 
-## 60-second verification (for a judge with a phone)
+## The three answers that matter
 
-1. Open the URL → tap «هدفون بلوتوثی زیر ۳ میلیون».
-2. Read one card aloud: price, age, availability. All three must be present.
-3. Tap the cheapest model → «فروشگاه‌ها» → look for a **بسته** badge.
-4. Tap that shop → the in-mall line and «اطمینان آدرس» must be visible.
-5. Tap «تماس با فروشنده» → watch the stepper → when it times out, alternatives appear.
-6. Tap «سفر» → a numbered plan with warnings.
-7. Tap the center FAB → type «گوشی سامسونگ تا ۲۰ میلیون قسطی» → tool trace → cards.
+**«چرا نباید به اینترنت/API بیرونی وصل شوی؟»**
+برای اینکه قیمت و موجودی متغیر است و در دیتاست تاریخ دارد؛ هر چیز بیرونی هم بدون سند است. تنها
+جایی که داده «تأیید» می‌شود، پاسخ فروشنده است.
+
+**«اگر مدل زبانی جواب ندهد؟»**
+همان مسیر با ترکیب‌کنندهٔ قاعده‌محور اجرا می‌شود؛ خروجی SSE یکی است و در UI با برچسب
+«حالت بدون مدل زبانی» اعلام می‌شود.
+
+**«چرا فاصله پیاده‌روی است؟»**
+چون بدون کلید مسیریابی هم کار می‌کند؛ هاورساین × ضریب حالت. در UI «تقریبی» علامت می‌خورد.

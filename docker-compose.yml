@@ -4,24 +4,13 @@ services:
     image: torbgard:latest
     ports:
       - "8000:8000"
+    env_file:
+      - path: .env
+        required: false
     environment:
-      # provider-agnostic LLM; leave none for the deterministic agent
       LLM_PROVIDER: ${LLM_PROVIDER:-none}
       LLM_API_KEY: ${LLM_API_KEY:-}
       LLM_MODEL: ${LLM_MODEL:-claude-sonnet-4-5}
-      LLM_BASE_URL: ${LLM_BASE_URL:-}
-      SNAPSHOT_DATE: ${SNAPSHOT_DATE:-2026-10-13}
-      DEMO_TIME_SCALE: ${DEMO_TIME_SCALE:-20}
+      DEMO_MODE: "true"
       CONTACT_TIMEOUT_SECONDS: ${CONTACT_TIMEOUT_SECONDS:-45}
-      DB_PATH: /data/app.db
-    volumes:
-      - torbgard_data:/data
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/api/health"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-
-volumes:
-  torbgard_data:

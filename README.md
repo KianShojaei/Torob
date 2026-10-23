@@ -1,240 +1,229 @@
 # ترب‌گرد · Torbgard
 
-**An agentic shopping assistant for _in-person_ shopping in Tehran.**
-Not "find me a product online" — but **"is it worth walking into this shop, right now?"**
+**An agentic assistant for _in-person_ shopping in Tehran.**
 
-Torbgard turns Torob's price listings into a decision: *which model*, *which shop nearby*,
-*is the listed price still real*, *is it open when I arrive*, *can I pay in installments*,
-*which floor of the mall*, and *what do I do if nobody answers*.
+Torob tells you what a product costs online. Torbgard answers the question that actually
+decides whether you leave the house:
 
-> The slogan: **«قبل از اینکه راه بیفتی، مطمئن شو.»**
-> Built for the **Starcoach / Torob** hackathon. Persian UI, RTL, mobile-first.
-> The dataset shipped with the challenge is a demo snapshot — every price is shown with its
-> age and availability status, and unknown facts are shown as **«نامشخص»**, never invented.
+> **«آیا ارزش دارد برای این محصول، الان، به این مغازه بروم؟»**
+> *Is it worth going to this shop, right now?*
 
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│  نیاز: «هدفون بلوتوثی تا ۳ میلیون، نزدیک ونک، قسطی»                        │
-│        │                                                                │
-│        ├─ محصول  → ۳ مدل با دلیل انتخاب (مشخصات، بازهٔ قیمت، امتیاز)         │
-│        ├─ فروشگاه → ۵ مغازه، مرتب‌شده با فاصله + قیمت + ساعت کاری + قسط     │
-│        ├─ مقایسه  → جدول قیمت/فاصله/ساعت/گارانتی/قسط                     │
-│        ├─ تماس    → «قیمت و موجودی همین مدل رو دارید؟» (شبیه‌سازی)          │
-│        ├─ جایگزین → اگر جواب نداد یا موجود نبود، ۳ گزینهٔ دیگر               │
-│        └─ سفر     → مسیر + طبقه/واحد داخل پاساژ + لیست خرید                │
-└─────────────────────────────────────────────────────────────────────────┘
-```
+It turns a Persian sentence («هدفون بلوتوثی زیر ۳ میلیون، نزدیک ونک، قسطی») into a decision:
+which model, which nearby shop, what the listed price really means, whether the shop is open
+**when you arrive**, how to find the unit inside the mall — and what to do when nobody answers.
 
 ---
 
-## 1. What makes it different
+## Why this is not another shop finder
 
-| Common "shop finder" | Torbgard |
+| Most shopping apps | Torbgard |
 |---|---|
-| Shows a price | Shows **price + date of that price + availability**, as three separate facts |
-| Assumes the shop is open | Computes open/closed **at your arrival time**, handles cross-midnight hours, treats `unsupported` as unknown |
-| Assumes installment | Only shows «قسطی» when the shop's payment data actually supports it; `0/0` limits mean *no information*, not *no limit* |
-| Lists shops | **Explains** the ranking (distance, price, freshness, hours, installment) with a visible score breakdown |
-| Stops when nobody replies | **Automatically suggests alternatives** and can rebuild the trip plan |
-| "Address: Tehran, ..." | Parses floor/unit/landmark and shows an **in-mall guide with a confidence label** |
-| Numbers from an LLM | Every number on screen comes from a tool result; a **guardrail strips any sentence with an unverified number** |
+| Show *a price* | Shows **price + when it was recorded + availability**, as three separate facts |
+| Assume the shop is open | Computes open/closed **at your arrival time**, handles cross-midnight shifts, treats `unsupported` as unknown |
+| Assume "installment" | Shows «قسطی» only when the seller's payment data proves an in-person plan; `0/0` limits mean *no information*, not *no limit* |
+| List shops by distance | Rank with a **visible score breakdown** (price, distance, hours, freshness, installment) and a reason for every claim |
+| Stop when nobody answers | **Automatically suggest alternatives** and rebuild the trip |
+| Print a long address | Parse mall / floor / unit / landmark, show an **in-mall guide with a confidence label** |
+| Let an LLM write numbers | Every number comes from a tool; a **guardrail deletes any sentence with an unverified number** |
 
-Honesty is a feature here, not a disclaimer. See [`docs/AGENT.md`](docs/AGENT.md) and
-[`backend/app/agent/guardrails.py`](backend/app/agent/guardrails.py).
+Unknown data is shown as **«نامشخص»** — never guessed, never hidden.
 
 ---
 
-## 2. Quick start (60 seconds, no keys required)
+## What it does (the five-step loop)
+
+1. **Understand** — Persian NLU extracts category, brand, budget, neighbourhood, usage and the
+   installment constraint, then asks *one* clarifying question if the need is still fuzzy.
+2. **Shortlist models** — search + recommend with specs and market position, not a wall of results.
+3. **Find nearby shops** — distance / walk time, price age & availability, opening hours at your ETA,
+   installment evidence, in-mall location.
+4. **Confirm with the seller** — a contact thread with a live status timeline; the reply is parsed
+   into price / stock / hours; silence or "out of stock" triggers alternatives.
+5. **Go** — an ordered visit plan with warnings, a route link and a copyable in-mall guide.
+
+Every step exists both as an **agent turn** and as a **card/button path** — the chat is an
+accelerator, never the only way to do something.
+
+---
+
+## Screens
+
+خانه · نتایج · مقایسهٔ محصولات · فروشگاه‌های نزدیک (لیست + نقشه) · جزئیات فروشگاه ·
+مقایسهٔ فروشگاه‌ها · مرکز تماس · برنامهٔ سفر · ذخیره‌شده‌ها · دستیار
+
+Mobile-first, RTL, Persian typography (Vazirmatn), Persian digits, installable as a PWA.
+
+---
+
+## Architecture
+
+```
+┌───────────────────────────────┐        ┌───────────────────────────────────────────┐
+│  Next.js 15 (static export)   │  /api  │  FastAPI                                  │
+│  React 19 · Tailwind · RTL    │◀──────▶│  ├── REST  (search, stores, contact, …)   │
+│  Leaflet map · SSE client     │  SSE   │  ├── agent orchestrator                   │
+└───────────────────────────────┘        │  │     understand → tools → compose       │
+                                          │  │     ↳ LLM (optional) + guardrails      │
+                                          │  ├── services (hours, address, pricing)   │
+                                          │  ├── seller simulator (personas, timers)  │
+                                          │  └── SQLite + FTS5 (prebuilt serving DB)  │
+                                          └───────────────────────────────────────────┘
+```
+
+* **One container.** The PWA is a static export served by FastAPI; one process, one port, no Node
+  at runtime. Cold start ~2 s because the database is built at image build time.
+* **Provider-agnostic LLM.** `LLM_PROVIDER=none|anthropic|openai` (+ `LLM_BASE_URL` for any
+  OpenAI-compatible gateway). With `none` the same flows run deterministically — the demo never
+  depends on a key. The UI labels that state honestly.
+* **Serving DB.** SQLite + FTS5 (bm25) with Persian folding and synonyms. The schema is plain SQL;
+  a Postgres migration path is documented in `docs/DATA.md`.
+
+---
+
+## Quick start
+
+Requirements: Python 3.11+, Node 20+.
 
 ```bash
-git clone https://github.com/KianShojaei/Torob && cd Torob
-
-make setup        # python venv + npm install
-make synthetic    # demo dataset (schema-faithful; use real CSVs if you have them)
-make data         # build the serving DB  (~10 s)
-make build        # build the PWA into backend/static
+make setup        # venv + pip + npm install
+make synthetic    # demo dataset (1,200 shops · 30,000 products · 60k offers)
+make data         # build backend/var/app.db  (~15 s) and validate invariants
+make frontend     # build the PWA into backend/static
 make serve        # http://localhost:8000
 ```
 
-No LLM key? The agent runs in **deterministic mode** (`LLM_PROVIDER=none`) and every flow still
-works. With a key:
+Development loop with hot reload:
 
 ```bash
-cp .env.example .env
-# LLM_PROVIDER=anthropic  LLM_API_KEY=sk-ant-...  LLM_MODEL=claude-sonnet-4-5
-make serve
+make api          # terminal 1 → :8000
+make dev          # terminal 2 → :3000 (proxies /api to :8000)
 ```
 
-### With real Torob data
+### With the real challenge dataset
 
-Put `shops.csv`, `products.csv`, `offers.csv` into `./data/` and rerun `make data`.
-The ETL is written against the documented schema ([`docs/DATA.md`](docs/DATA.md)) and is defensive:
-broken JSON, `null` strings, duplicate `(shop, product)` rows, prices outside `10k…5e9`,
-`unsupported` opening hours, missing brands, and 3,428 categories are all handled.
+```bash
+# put shops.csv / products.csv / offers.csv into ./data
+make data         # real CSVs are detected automatically
+make frontend && make serve
+```
+
+`make data` prints an ETL validation report and writes `backend/var/etl-report.json`.
+A bundled `.zip` works too: `python scripts/prepare_dataset.py data/starcoach.zip`.
 
 ### Docker / Liara
 
 ```bash
-docker compose up --build          # one container, API + PWA on :8000
+docker build -t torbgard .
+docker run --rm -p 8000:8000 --env-file .env torbgard
 ```
 
-Liara deployment (Dockerfile → `liara deploy --platform docker`) is described step by step in
-[`docs/DEPLOY.md`](docs/DEPLOY.md).
+Liara (one Docker app, free plan is enough): see **[docs/DEPLOY.md](docs/DEPLOY.md)**.
+
+### Demo
+
+* **[docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md)** — the 5-minute recording script with exact clicks,
+  timings and fallbacks.
+* **[docs/JUDGING.md](docs/JUDGING.md)** — rubric → screen → file, for a judge in a hurry.
+* `python scripts/seed_demo.py` — picks a good product and prints which seller answers, which stays
+  silent, and how long the reply takes.
 
 ---
 
-## 3. How it works
+## Configuration
 
-```
-Next.js 15 PWA (static export)  ──  served by FastAPI  ──  SQLite (FTS5) / PostgreSQL
-        │                                  │
-        │  REST + SSE                      ├── agent/orchestrator   (planner → tools → copy)
-        └──────────────────────────────▶   │     ├─ understand   (Persian NLU: needle → Need)
-                                           │     ├─ llm          (Anthropic | OpenAI-compat | none)
-                                           │     ├─ tools        (11 tools, typed I/O)
-                                           │     ├─ guardrails   (numbers must come from tools)
-                                           │     └─ compose      (Persian answers + cards)
-                                           └── simulator         (seller persona, replies, timeouts)
-```
+Everything is optional; see `.env.example`.
 
-* **One container.** The Next.js app is a *static export*; FastAPI serves it. One process, one port,
-  no Node runtime in production, ~90 MB RSS idle.
-* **Tool-calling agent.** The LLM plans and phrases; it never invents data. When it is unavailable,
-  the orchestrator takes the same path with rules and templates — the SSE contract is identical.
-* **Simulated sellers.** Contact is simulated (clearly badged in the UI). Each shop gets a stable
-  persona: responsiveness, reliability, stock, language. Real channel adapters (`tel:`, `wa.me`,
-  Bale deep links) sit behind the same interface.
-* **Time compression.** `DEMO_TIME_SCALE=20` maps one simulated minute to 3 real seconds so a
-  reply, a follow-up and a timeout are visible inside a 5-minute demo.
-
-### Agent tools
-
-| Tool | Purpose |
-|---|---|
-| `search_products` | text + category + brand + budget search (FTS5 bm25, Persian folding, synonyms) |
-| `recommend_models` | 3–5 models with `reasons[]` and a score breakdown |
-| `compare_products` | specs table across models, only where the dataset knows a value |
-| `find_stores` | shops carrying a product, with distance, price age, open state, installment |
-| `compare_stores` | price / distance / hours / warranty / installment side by side |
-| `check_open` | open at the ETA (walking time), not "open now" |
-| `locate_in_mall` | floor / unit / landmark + confidence |
-| `contact_store` | ask price & stock (simulated; the only place a "confirmed" fact can appear) |
-| `contact_status` | poll a thread |
-| `suggest_alternatives` | other shops / models when `no_reply`, `out_of_stock`, `closed` |
-| `plan_visit` | ordered stops, warnings, route link |
-
-### SSE contract
-
-```text
-text_delta   {text}                       streaming answer text
-tool_status  {name, status, label_fa}     visible agent trace
-card         {kind, payload}              product_list | store_list | compare | contact | plan | ...
-state_update {need}                       what the agent understood
-done         {latency_ms, degraded}       end of turn
-error        {message}                    never a stack trace
-```
-
----
-
-## 4. API
-
-| Method | Path | Notes |
+| Variable | Default | Meaning |
 |---|---|---|
-| GET | `/api/health` · `/api/healthz` | liveness + db readiness |
-| GET | `/api/ready` · `/api/readyz` | counts, means the ETL artefacts are usable |
-| GET | `/api/meta` | dataset mode, snapshot date, demo flags, LLM provider |
+| `LLM_PROVIDER` | `none` | `none` · `anthropic` · `openai` |
+| `LLM_API_KEY` | – | provider key (never committed) |
+| `LLM_MODEL` | `claude-sonnet-4-5` | model id |
+| `LLM_BASE_URL` | – | OpenAI-compatible gateway base URL |
+| `SNAPSHOT_DATE` | `2026-10-13` | reference date for price age and hours |
+| `DEMO_NOW` | – | freeze the open/closed clock for a recording (e.g. `2026-10-21T17:30:00+03:30`) |
+| `DEMO_TIME_SCALE` | `20` | 1 simulated minute = 3 real seconds |
+| `CONTACT_TIMEOUT_SECONDS` | `45` | when a silent seller becomes "no reply" |
+| `DEFAULT_LAT` / `DEFAULT_LON` | Tehran centre | fallback location |
+| `MAP_TILE_URL` | OSM tiles | any free tile server |
+| `DB_PATH` | `backend/var/app.db` | serving database |
+
+---
+
+## API
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/api/health`, `/api/healthz` | liveness + DB readiness |
+| GET | `/api/ready` | counts (shops, products, offers, malls) |
+| GET | `/api/meta` | dataset mode, demo flags, LLM state, tiles, default location |
+| GET | `/api/categories`, `/api/neighbourhoods`, `/api/malls` | reference data |
 | POST | `/api/search` | products + price stats + key specs |
-| POST | `/api/stores` | shops for a product with all transparency fields |
-| GET | `/api/shops/{id}` · `/api/products/{id}` | detail |
-| POST | `/api/compare/stores` · `/api/compare/products` | comparison |
-| POST | `/api/contact` · GET `/api/contact/{id}` · GET `/api/contacts` | seller simulation |
-| POST | `/api/alternatives` · `/api/plan` | recovery path and trip plan |
-| POST | `/api/agent` · `/api/agent/stream` | agent (JSON / SSE) |
-| GET | `/api/malls` · `/api/malls/{key}` · `/api/categories` · `/api/neighbourhoods` | reference data |
+| POST | `/api/stores` | ranked shops for a product, with transparency fields |
+| GET | `/api/shops/{id}` | full shop detail incl. hours, contacts, mall guide |
+| POST | `/api/compare/stores`, `/api/compare/products` | comparison matrices |
+| POST | `/api/contact` → GET `/api/contact/{id}` | seller thread + polling status |
+| POST | `/api/alternatives` | replacement shops / models |
+| POST | `/api/plan` | ordered visit plan |
+| POST | `/api/agent`, `/api/agent/stream` | agent (JSON / SSE) |
+| POST | `/api/events` | anonymous UX events |
 | GET | `/api/docs` | OpenAPI UI |
 
----
-
-## 5. Screens (mobile, RTL)
-
-خانه · نتایج · کارت محصول · مقایسهٔ محصولات · فروشگاه‌های نزدیک (لیست/نقشه) ·
-جزئیات فروشگاه · مقایسهٔ فروشگاه‌ها · مرکز تماس · برنامهٔ سفر · ذخیره‌شده‌ها · گفت‌وگو با دستیار
-
-Every screen is reachable without the chat: cards, buttons, filters and sheets. The chat is an
-*accelerator*, never the only path (master prompt §10).
-
-### Documentation
-
-| Doc | What |
-|---|---|
-| [`docs/01-challenge-analysis.md`](docs/01-challenge-analysis.md) | problem framing, personas, the "is it worth going?" loop (Persian) |
-| [`docs/02-architecture.md`](docs/02-architecture.md) | stack, data flow, screen map, risk register |
-| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | phase-0 decisions, folder layout, deviations |
-| [`docs/DATA.md`](docs/DATA.md) | dataset pathologies, ETL rules, every derived label |
-| [`docs/AGENT.md`](docs/AGENT.md) | agent design, tools, guardrails, evaluation |
-| [`docs/DEPLOY.md`](docs/DEPLOY.md) | Liara / Docker runbook, env reference, troubleshooting |
-| [`docs/DEMO_SCRIPT.md`](docs/DEMO_SCRIPT.md) | **5-minute demo video script** with timings and backup paths |
-| [`docs/JUDGING.md`](docs/JUDGING.md) | rubric cheat sheet: where to click, what proves it |
+SSE event kinds: `text_delta`, `tool_status`, `card`, `state_update`, `done`, `error`.
 
 ---
 
-## 6. Tests
+## Quality
 
 ```bash
-make test      # 80 tests: unit (hours, address, pricing, normalize, simulator)
-               #            API contract (all endpoints, SSE)
-               #            agent evals (constraints, tool calls, guardrails)
+make test                         # 100 tests
+python scripts/smoke.sh           # post-deploy contract check (10 checks)
+python scripts/journey.py         # 46-assertion end-to-end user journey
+python scripts/seed_demo.py       # data for the demo recording
 ```
 
-The agent evals are the interesting ones: each scenario asserts the extracted constraints, the
-tools that must run, the cards that must appear, and that the answer contains no number that was
-not returned by a tool. CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) builds a small
-dataset, validates the ETL invariants, runs the tests, builds the PWA, builds the image and runs a
-container smoke test.
+* **100 tests**: normalization, ETL (readers, pipeline on a real-shaped fixture), contact flow,
+  agent NLU, agent eval scenarios (tool call + no-hallucinated-number assertions), API contract.
+* **ETL validation** fails the build on duplicates, cap violations, geo outside Tehran, FTS drift,
+  implausible price validity.
+* **CI** runs backend tests, ETL validation, `tsc --noEmit`, the PWA build and the container build.
 
 ---
 
-## 7. Repository layout
+## Repository layout
 
 ```
-backend/app/
-  api/        REST + SSE
-  agent/      understand · llm · tools · guardrails · compose · orchestrator
-  services/   normalize · hours · address · pricing · geo · search · stores
-  simulator/  persona · parser · engine (threads, replies, timeouts)
-  etl/        readers · taxonomy · synthetic · build · validate
+backend/
+  app/
+    api/        REST + SSE
+    agent/      understand · llm · tools · guardrails · compose · orchestrator
+    services/   normalize · hours · address · pricing · geo · search · stores
+    simulator/  persona · parser · engine
+    etl/        readers · taxonomy · synthetic · build · validate
+  app/tests/    unit, ETL, API and agent-eval suites
 frontend/
-  app/        App Router entry + RTL shell
-  components/ 20+ screens & UI primitives
-  lib/        api client (incl. SSE), state store, format helpers
-docs/         architecture, data, agent, deploy, demo script, judging cheat sheet
-data/         CSV drop-in folder (synthetic placeholder included)
+  app/          App Router entry + layout
+  components/   screens and UI primitives
+  lib/          api client, state store, formatting
+docs/           data, deploy, demo script, judging map
+scripts/        smoke test, end-to-end journey
+data/           CSV drop-in folder (never committed)
 ```
 
 ---
 
-## 8. Limits & honesty
+## Honest limitations
 
-* The bundled dataset is **synthetic** (`/api/meta` → `dataset_mode: "synthetic"`). Shop names,
-  phones and addresses in it are generated; real shop names are used only as *place labels*.
-* Seller contact is **simulated**. The UI carries a badge and a Persian notice on every contact
-  screen; real channels open the dialer / WhatsApp / Bale instead of pretending.
-* Travel time falls back to haversine × walking factor when no routing service is configured —
-  the UI then says «تقریبی».
-* No LLM key is required to run the demo; the degraded path is a first-class citizen.
-
----
-
-## خلاصهٔ فارسی
-
-**ترب‌گرد** یک دستیار خرید **حضوری** است: از «نمی‌دانم چه مدلی» تا «جلوی در مغازه، با قیمت و
-موجودی تأییدشده». نزدیک‌ترین فروشگاه‌ها را با فاصله، قیمت، تاریخ قیمت و ساعت کاری نشان می‌دهد،
-فروشگاه‌ها را مقایسه می‌کند، با فروشنده تماس می‌گیرد (شبیه‌سازی‌شده و با برچسب شفاف)، و اگر جواب
-نگرفت یا موجود نبود جایگزین پیشنهاد می‌دهد و برنامهٔ سفر می‌سازد. هر عدد از داده می‌آید و هر
-دادهٔ نامعلوم «نامشخص» نمایش داده می‌شود.
-
-اجرا: `make setup && make synthetic && make data && make build && make serve`
+* The bundled dataset is **synthetic but schema-faithful** (same columns, same pathologies, same
+  rates). `/api/meta` and the UI say so. Real CSVs are a drop-in replacement.
+* **Seller contact is simulated.** Every contact screen carries a «شبیه‌سازی» badge and the README
+  says it. Real channels (`tel:`, `wa.me`, Bale deep links) sit behind the same interface.
+* Phone numbers and shop names in the dataset are demo values; they are never looked up externally.
+* Travel time is haversine × mode factor (no routing key required); the UI calls it approximate.
+* Installment is shown only when confirmed; where the source has `0/0` limits the app says
+  «نامشخص» instead of inventing a plan.
 
 ---
 
-MIT © 2026 — see [LICENSE](LICENSE).
+## License
+
+MIT — see [LICENSE](LICENSE).

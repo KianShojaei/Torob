@@ -201,7 +201,9 @@ def ask(shop_id: str, product_id: str | None, intent: str = "price_stock",
     age_days = offer["age_days"] if offer else None
     persona = persona_for(shop_id, shop["name"], age_days, bool(shop["hours_known"]))
     week = parse_week(json.loads(shop["weekly_hours"]) if shop["weekly_hours"] else {})
-    status = open_status(week, _now())
+    # the seller's "we are closed" answer follows the same clock the UI shows
+    # (DEMO_NOW freezes it for recordings); scheduling below stays on real time.
+    status = open_status(week, settings.now_tehran)
     title = product["title"] if product else "این محصول"
     recorded = offer["price"] if offer and offer["price_valid"] else None
 
@@ -286,7 +288,7 @@ def _materialize_reply(thread_row) -> dict | None:
         return None
     week = parse_week(json.loads(shop["weekly_hours"]) if shop["weekly_hours"] else {})
     now = _now()
-    status = open_status(week, now)
+    status = open_status(week, settings.now_tehran)
     closed_now = status.state == "closed"
 
     import random

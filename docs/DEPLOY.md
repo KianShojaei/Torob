@@ -1,145 +1,129 @@
 # Deploy
 
-Three paths, same image. Nothing here needs a paid service or an API key.
+The whole product is **one container**: FastAPI serves the REST/SSE API *and* the built PWA.
+No Node runtime, no separate web server, no external service at runtime.
+
+| Fact | Value |
+|---|---|
+| Image | `python:3.12-slim`, ~340 MB with the prebuilt database |
+| Cold start | ~2 s (the ETL runs at image build time, not at boot) |
+| RAM | ~120 MB steady, fits any free plan |
+| Port | `8000` (`PORT` is honoured) |
+| State | the serving DB is rebuilt at image build; contact threads are ephemeral unless you mount a volume |
 
 ---
 
-## 0. What ships
+## 1. Local
 
-```
-torbgard:latest
-├── /app/backend          FastAPI (API + SSE)
-│   ├── static/           PWA build (Next.js static export)
-│   └── var/app.db        prebuilt SQLite DB (ETL already done)
-└── uvicorn :8000         one process, ~90 MB idle
+```bash
+make setup && make synthetic && make data && make frontend && make serve
+# → http://localhost:8000
 ```
 
-Cold start is ~1.5 s: no migration, no ETL, no external dependency.
+## 2. Docker
+
+```bash
+docker build -t torbgard .
+docker run --rm -p 8000:8000 --env-file .env torbgard
+```
+
+The image build **detects the dataset**:
+
+* if `data/shops.csv` and `data/offers.csv` exist → they are used;
+* otherwise a synthetic dataset is generated so the demo always boots.
+
+To ship the real dataset, put the CSVs in `./data` before `docker build` (they are not committed to
+git, but they are part of the local build context).
 
 ---
 
-## 1. Liara (public instance)
+## 3. Liara
 
-Liara runs a Dockerfile and exposes the container's port. One app, one container.
+Liara runs a Dockerfile and gives you an HTTPS subdomain. One app is enough.
 
 ```bash
 # once
 npm i -g @liara/cli
 liara login
 
-# in the repository root (Dockerfile present)
-liara create --app torbgard --platform docker --plan free
-liara deploy --app torbgard --platform docker --port 8000
+# from the repository root
+liara create --platform docker --plan free
+liara deploy --platform docker --port 8000
 ```
 
-`liara.json` (already in the repo):
+`liara.json` in the repo pins the platform, the port and the health check:
 
 ```json
 {
   "platform": "docker",
-  "app": "torbgard",
   "port": 8000,
-  "healthCheck": { "command": "curl -fsS http://localhost:8000/api/health" },
-  "env": {
-    "LLM_PROVIDER": "none",
-    "SNAPSHOT_DATE": "2026-10-13",
-    "DEMO_TIME_SCALE": "20",
-    "CONTACT_TIMEOUT_SECONDS": "45"
-  }
+  "healthCheck": { "command": "curl -fsS http://127.0.0.1:8000/api/health" }
 }
 ```
 
-Then:
+### Environment
+
+Set these in the Liara dashboard (or `liara env set`). Only the LLM key is optional — the app is
+fully functional without it.
+
+| Key | Value | Required |
+|---|---|---|
+| `LLM_PROVIDER` | `none` · `anthropic` · `openai` | no (default `none`) |
+| `LLM_API_KEY` | provider key | only if provider ≠ none |
+| `LLM_MODEL` | e.g. `claude-sonnet-4-5` | no |
+| `LLM_BASE_URL` | OpenAI-compatible gateway | no |
+| `SNAPSHOT_DATE` | `2026-10-13` | no |
+| `CONTACT_TIMEOUT_SECONDS` | `45` | no |
+| `DEMO_TIME_SCALE` | `20` | no |
 
 ```bash
 liara env set LLM_PROVIDER=anthropic LLM_API_KEY=sk-ant-... LLM_MODEL=claude-sonnet-4-5
-liara env set -a torbgard LLM_PROVIDER=anthropic   # or use the dashboard
-liara deploy --app torbgard --platform docker --port 8000
 ```
 
-Notes that matter on free/tiny plans:
+### Persistent contact threads (optional)
 
-* **Keep SQLite.** The image ships a read-mostly `app.db`; only the contact simulator writes.
-  If you switch to PostgreSQL (Liara DB), set `DB_URL` and run `python -m app.etl.build` once as a
-  one-off job — the code path already supports it, but there is no reason to spend RAM on it here.
-* **One worker.** `--workers 1`; the simulator schedules replies in the DB and does not need shared
-  memory, but SQLite writes are happier with one process.
-* **Volume (optional).** Mount a disk at `/data` and set `DB_PATH=/data/app.db` if you want contact
-  threads to survive a redeploy. Without it the DB resets — which is fine for a demo.
-* **Port.** Liara's health check expects the app on `$PORT`; the Dockerfile hardcodes 8000 and
-  `liara.json` maps it. If your plan injects `PORT`, change the CMD to
-  `uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}`.
-
-### Real data in the image
-
-`docker build` bakes `./data/*.csv` when `shops.csv`, `products.csv` and `offers.csv` are present
-and falls back to the synthetic dataset otherwise. The ETL runs **at build time**, so the container
-still starts in ~1.5 s. Nothing data-related goes into git.
-
-### Verify the deployment
+Replies are stored in SQLite. On an ephemeral filesystem they disappear on redeploy, which is fine
+for a demo. To keep them, mount a disk at `/data` and set:
 
 ```bash
-BASE_URL=https://torbgard.liara.run ./scripts/smoke.sh
+liara env set DB_PATH=/data/app.db
 ```
 
-The script checks: health, ready, PWA HTML, search, stores payload, contact creation, agent cards.
-It exits non-zero on the first broken contract, so it is safe to run in CI after deploy.
+### After deploy
+
+```bash
+BASE_URL=https://<your-app>.liara.run ./scripts/smoke.sh
+```
+
+You should see ten green checks: health, database, demo flags, simulation disclosure, search,
+transparency fields, availability, agent cards, tool calls.
 
 ---
 
-## 2. Any Docker host
+## 4. CI
 
-```bash
-docker build -t torbgard .
-docker run -p 8000:8000 -e LLM_PROVIDER=none torbgard
-```
+`.github/workflows/ci.yml` runs on every push:
 
-or
-
-```bash
-docker compose up --build
-```
-
-## 3. Local development
-
-```bash
-make setup && make synthetic && make data
-make api      # terminal 1 — FastAPI on :8000
-make dev      # terminal 2 — Next dev on :3000 with /api proxied
-```
-
-`next.config.mjs` only adds the `/api` rewrite when `NODE_ENV=development`, so the static export
-stays clean (the build prints a harmless "rewrites will not be applied" warning — expected).
+1. **backend** — generates a small dataset, builds the DB, runs `etl.validate`, then `pytest` (100 tests).
+2. **frontend** — `npm ci`, `tsc --noEmit`, `next build`.
+3. **docker** — builds the image (proves the ETL-at-build-time path).
 
 ---
 
-## Environment reference
-
-| Var | Default | Meaning |
-|---|---|---|
-| `LLM_PROVIDER` | `none` | `none` · `anthropic` · `openai` |
-| `LLM_API_KEY` | – | provider key (never committed) |
-| `LLM_MODEL` | `claude-sonnet-4-5` | model id; any model of the provider |
-| `LLM_BASE_URL` | – | for OpenAI-compatible gateways / proxies |
-| `DATA_DIR` | `./data` | CSV drop-in folder |
-| `DB_PATH` | `./backend/var/app.db` | serving DB (the container copies the baked DB here on first run if the path is empty) |
-| `PORT` | `8000` | respected by the container CMD and the health check |
-| `DB_URL` | – | PostgreSQL URL (optional alternative) |
-| `SNAPSHOT_DATE` | `2026-10-13` | reference date for price age / hours |
-| `DEMO_MODE` | `true` | exposes simulation badges and the time scale |
-| `DEMO_TIME_SCALE` | `20` | 1 simulated minute = 3 real seconds |
-| `CONTACT_TIMEOUT_SECONDS` | `45` | when a simulated seller is declared silent |
-| `DEFAULT_LAT` / `DEFAULT_LON` | 35.6949 / 51.4071 | Tehran fallback for distance |
-| `MAP_TILE_URL` | OSM raster | swap for any free tile server |
-| `CORS_ORIGINS` | `*` | comma separated |
-
-## Troubleshooting
+## 5. Troubleshooting
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| `/api/ready` → 503 | DB not built | `make data` (or check `backend/var/app.db` exists) |
-| Home shows no products | empty search index | rebuild: `make data` |
-| Agent says «حالت بدون مدل زبانی» | `LLM_PROVIDER=none` or bad key | set the key, or accept degraded mode (demo-safe) |
-| 404 on deep links | static export served without catch-all | in this repo FastAPI's catch-all handles it; check `backend/static/index.html` exists |
-| Map tiles grey in Iran | OSM blocked/slow | set `MAP_TILE_URL` to a reachable tile server; the list view always works |
-| Contacts never time out | `CONTACT_TIMEOUT_SECONDS` too high for the demo | lower it to 20–30 |
+| `/api/health` says `db_ready:false` | the DB was not built | run `make data` locally / rebuild the image |
+| The app shows the synthetic badge with real data | `data/synthetic_truth.json` survived | delete it (`scripts/prepare_dataset.py` does this) |
+| Contact never leaves `sent` | `CONTACT_TIMEOUT_SECONDS` too long for the demo | lower it to 20–30 |
+| Installment filter returns nothing | the snapshot has only 266 shops with payment data | that is correct behaviour; the sheet explains the hard filter |
+| Map tiles blank | the tile server is blocked | the list view is the primary path; set `MAP_TILE_URL` to a reachable server |
+| Agent answers feel templated | `LLM_PROVIDER=none` | set a provider + key; the deterministic path stays as fallback |
+
+---
+
+## 6. Cost
+
+Everything used at runtime is free: OSM tiles, haversine distance, SQLite. A Liara free plan or any
+512 MB container is sufficient; the LLM is optional and only consumes tokens for the chat turns.

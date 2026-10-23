@@ -26,6 +26,9 @@ class Settings(BaseSettings):
 
     # --- demo / contact simulation ---
     demo_mode: bool = True
+    # fixed clock for "is it open when I arrive" (e.g. 2026-10-21T17:30:00+03:30).
+    # Empty = real Tehran time. Seller replies always use the real clock.
+    demo_now: str = ""
     demo_time_scale: float = 20.0        # 1 simulated minute = 60/scale seconds
     contact_timeout_seconds: float = 45.0
     no_reply_rate: float = 0.33
@@ -47,6 +50,13 @@ class Settings(BaseSettings):
     @property
     def now_tehran(self) -> datetime:
         from app.services.hours import TEHRAN
+
+        if self.demo_now:
+            try:
+                fixed = datetime.fromisoformat(self.demo_now)
+                return fixed.astimezone(TEHRAN) if fixed.tzinfo else fixed.replace(tzinfo=TEHRAN)
+            except ValueError:
+                pass
         return datetime.now(TEHRAN)
 
     @property

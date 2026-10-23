@@ -71,25 +71,61 @@ def _fmt(minutes: int) -> str:
 
 
 def parse_day(raw) -> DayHours:
-    if not raw or not isinstance(raw, dict):
+    """Normalise one day of the dataset's ``weekly_hours``.
+
+    Accepts every shape seen in Torob exports:
+
+    * ``{"status": "declared", "shifts": [{"start_time": "10:00", "end_time": "21:00"}]}``
+    * ``{"open": "10:00", "close": "21:00"}`` (or ``open_time``/``close_time``)
+    * ``[{"start_time": "10:00", "end_time": "21:00"}]``
+    * ``"unsupported"`` / ``"closed"`` / ``"24h"``
+
+    ``unsupported``, missing and unparseable values are **unknown**, never "closed".
+    """
+    if raw is None:
         return DayHours("unknown", ())
-    status = str(raw.get("status") or "unknown").lower()
+    if isinstance(raw, str):
+        s = raw.strip().lower()
+        if s in ("", "null", "none", "unsupported", "unknown", "نامشخص"):
+            return DayHours("unknown", ())
+        if s in ("closed", "تعطیل", "بسته"):
+            return DayHours("closed", ())
+        if s in ("24h", "24/7", "always", "همیشه"):
+            return DayHours("declared", ((0, 24 * 60),))
+        return DayHours("unknown", ())
+    if isinstance(raw, list):
+        raw = {"status": "declared", "shifts": raw}
+    if not isinstance(raw, dict):
+        return DayHours("unknown", ())
+
+    status = str(raw.get("status") or "").lower()
+    if not status:
+        o = (raw.get("open") or raw.get("open_time") or raw.get("start")
+             or raw.get("start_time") or raw.get("from"))
+        e = (raw.get("close") or raw.get("close_time") or raw.get("end")
+             or raw.get("end_time") or raw.get("to"))
+        if o and e:
+            s_min, e_min = parse_time(str(o)), parse_time(str(e))
+            if s_min is not None and e_min is not None and s_min != e_min:
+                return DayHours("declared", ((s_min, e_min),))
+        return DayHours("unknown", ())
+
     shifts: list[tuple[int, int]] = []
-    for sh in raw.get("shifts") or []:
+    raw_shifts = raw.get("shifts")
+    if isinstance(raw_shifts, dict):
+        raw_shifts = [raw_shifts]
+    for sh in raw_shifts or []:
         if not isinstance(sh, dict):
             continue
-        s = parse_time(sh.get("start_time"))
-        e = parse_time(sh.get("end_time"))
-        if s is None or e is None:
+        s_min = parse_time(sh.get("start_time") or sh.get("open") or sh.get("from"))
+        e_min = parse_time(sh.get("end_time") or sh.get("close") or sh.get("to"))
+        if s_min is None or e_min is None:
             continue
-        # dummy 00:00–00:00 is "no real shift"
-        if s == e:
+        if s_min == e_min:
             continue
-        shifts.append((s, e))
+        shifts.append((s_min, e_min))
     if status == "declared":
-        if not shifts:
-            return DayHours("closed", ())
-        return DayHours("declared", tuple(shifts))
+        return DayHours("declared", tuple(shifts)) if shifts else DayHours("closed", ())
     if status == "closed":
         return DayHours("closed", ())
     if status == "unsupported":
@@ -97,8 +133,37 @@ def parse_day(raw) -> DayHours:
     return DayHours("unknown", tuple(shifts))
 
 
+DAY_ALIASES = {
+    "sat": "sat", "saturday": "sat", "sh": "sat", "شنبه": "sat",
+    "sun": "sun", "sunday": "sun", "یک‌شنبه": "sun", "یکشنبه": "sun", "يكشنبه": "sun",
+    "mon": "mon", "monday": "mon", "دوشنبه": "mon",
+    "tue": "tue", "tuesday": "tue", "سه‌شنبه": "tue", "سهشنبه": "tue", "سه شنبه": "tue",
+    "wed": "wed", "wednesday": "wed", "چهارشنبه": "wed", "چهار‌شنبه": "wed",
+    "thu": "thu", "thursday": "thu", "پنج‌شنبه": "thu", "پنجشنبه": "thu", "پنج شنبه": "thu",
+    "fri": "fri", "friday": "fri", "جمعه": "fri",
+    # numeric weeks: the dataset is Saturday-first
+    "0": "sat", "1": "sun", "2": "mon", "3": "tue", "4": "wed", "5": "thu", "6": "fri",
+}
+
+
+def _canonical_week(raw: dict) -> dict:
+    out: dict = {}
+    for key, value in raw.items():
+        name = str(key).strip().lower().replace("\u200c", "").replace("-", " ")
+        canonical = DAY_ALIASES.get(name) or DAY_ALIASES.get(name.replace(" ", ""))
+        if canonical:
+            out[canonical] = value
+    return out
+
+
 def parse_week(raw: dict | None) -> dict[str, DayHours]:
-    raw = raw or {}
+    """Normalise a weekly schedule whatever the day keys look like.
+
+    The export has used ``sat``/``saturday``/``شنبه`` and ``0..6`` across versions;
+    all of them map to the same seven slots. Unknown keys are ignored, missing days
+    stay **unknown**.
+    """
+    raw = _canonical_week(raw or {}) if isinstance(raw, dict) else {}
     return {k: parse_day(raw.get(k)) for k in _DAY_KEYS}
 
 

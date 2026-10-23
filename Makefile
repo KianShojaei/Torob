@@ -1,49 +1,60 @@
 SHELL := /bin/bash
-PY := ./.deps/python/bin/python
-PIP := ./.deps/python/bin/pip
-NODE_ENV ?= development
+PY ?= .deps/python/bin/python
+NPM ?= npm
+PORT ?= 8000
 
-.DEFAULT_GOAL := help
+.PHONY: help setup synthetic data build frontend dev api serve test test-fast docker smoke clean reset-db
 
-.PHONY: help setup synthetic data build dev api test lint fmt docker smoke clean
+help:  ## show this help
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2}'
 
-help: ## show targets
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-12s\033[0m %s\n", $$1, $$2}'
+setup:  ## create the venv, install backend + frontend dependencies
+	python3 -m venv .deps/python
+	$(PY) -m pip install -q --upgrade pip
+	$(PY) -m pip install -q -r backend/requirements.txt
+	cd frontend && $(NPM) install --no-audit --no-fund
 
-setup: ## create the python venv + install deps (idempotent)
-	@test -d .deps/python || python3 -m venv .deps/python
-	@$(PIP) install -q -r backend/requirements.txt
-	@test -d frontend/node_modules || (cd frontend && npm ci --no-audit --no-fund)
+synthetic:  ## generate a schema-faithful demo dataset into ./data
+	$(PY) -m app.etl.synthetic --out ../data --shops 1200 --products 30000 --offers 60000
+	@cd backend && true
 
-synthetic: ## generate a schema-faithful demo dataset into ./data (fast)
-	@cd backend && ../$(PY) -m app.etl.synthetic --out ../data --shops 1200 --products 30000 --offers 60000
+data:  ## build the serving database from ./data (real CSVs if present)
+	cd backend && ../$(PY) -m app.etl.build --data ../data --db var/app.db
+	cd backend && ../$(PY) -m app.etl.validate --db var/app.db
 
-data: ## build the serving DB from ./data (real CSVs if present, else synthetic)
-	@cd backend && ../$(PY) -m app.etl.build --data ../data --db var/app.db
+frontend:  ## build the PWA and copy it into backend/static
+	cd frontend && $(NPM) run build
+	rm -rf backend/static && cp -r frontend/out backend/static
 
-build: ## build the PWA into backend/static
-	@cd frontend && npm run build
-	@rm -rf backend/static && cp -r frontend/out backend/static
-	@echo "static → backend/static"
+build: frontend  ## alias
 
-dev: ## Next dev server (port 3000) proxying /api to :8000
-	@cd frontend && npm run dev
+api:  ## run the API only (auto-reload)
+	cd backend && ../$(PY) -m uvicorn app.main:app --reload --host 0.0.0.0 --port $(PORT)
 
-api: ## FastAPI only (port 8000)
-	@cd backend && ../$(PY) -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+dev:  ## run the Next.js dev server (proxies /api to :8000)
+	cd frontend && $(NPM) run dev
 
-serve: build ## production-like: one process serving API + PWA
-	@cd backend && ../$(PY) -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+serve:  ## production-like: one process serving API + built PWA
+	cd backend && ../$(PY) -m uvicorn app.main:app --host 0.0.0.0 --port $(PORT)
 
-test: ## backend unit + API + eval tests
-	@cd backend && ../$(PY) -m pytest -q
+test:  ## full backend suite
+	cd backend && ../$(PY) -m pytest -q
 
-docker: ## build the container image
+test-fast:  ## unit tests only (no database needed)
+	cd backend && ../$(PY) -m pytest -q -m "not db"
+
+docker:  ## build the single container
 	docker build -t torbgard:latest .
 
-smoke: ## post-deploy smoke test against a running instance
-	@./scripts/smoke.sh $${BASE_URL:-http://127.0.0.1:8000}
+docker-run:  ## run the container on :8000
+	docker run --rm -p 8000:8000 --env-file .env torbgard:latest
 
-clean: ## remove build outputs and the local DB
-	@rm -rf frontend/.next frontend/out backend/static backend/var .pytest_cache
-	@find . -name __pycache__ -type d -prune -exec rm -rf {} + 2>/dev/null || true
+smoke:  ## post-deploy smoke test (BASE_URL=... make smoke)
+	./scripts/smoke.sh $${BASE_URL:-http://127.0.0.1:8000}
+
+clean:  ## remove build output and caches (keeps ./data and the venv)
+	rm -rf frontend/.next frontend/out backend/static backend/var/*.db
+	find . -name __pycache__ -type d -prune -exec rm -rf {} + 2>/dev/null || true
+
+reset-db:  ## delete the serving database (rebuild with `make data`)
+	rm -f backend/var/app.db backend/var/app.db-wal backend/var/app.db-shm

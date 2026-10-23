@@ -1,136 +1,136 @@
-# Demo script — 5 minutes, one phone, no instructions needed
+# 🎬 Torbgard — 5-minute demo script
 
-**Record in Persian. Screen-record a phone (or the mobile viewport), portrait.**
-Two rules: never read a slide while an app screen is available, and never claim something the
-screen does not show.
+**Format:** screen recording of a phone (or a narrow browser window ~390 px), Persian voice-over.
+**Goal:** in five minutes a judge must see the full loop *and* the honesty rules, not a feature list.
 
-Seed state before recording (2 minutes, do it once):
+> Before recording, freeze the clock so shops are open at a realistic hour:
+> `DEMO_NOW=2026-10-21T17:30:00+03:30 make serve` (a Wednesday evening).
+> Seller replies still use real time, so the contact beat stays dynamic.
 
-```bash
-make synthetic && make data && make build && make serve
-# open http://localhost:8000 in a phone-sized window, choose «شیخ هادی» as neighbourhood
-# (or tap «موقعیت من»), and pin the app to the home screen to show the PWA.
-```
-
-Time cues assume `CONTACT_TIMEOUT_SECONDS=45` and `DEMO_TIME_SCALE=20`.
+Run `python scripts/seed_demo.py` and paste its output into the notes below — it prints the exact
+product id, the four shops, which one answers and which one stays silent.
 
 ---
 
-## 0:00 – 0:25 · The gap (voice-over, home screen)
+## 0:00 — 0:20 · The hook (home screen)
 
-> «ترب قیمت آنلاین را نشان می‌دهد. ولی وقتی تصمیم می‌گیریم **حضوری** بخریم، سه سؤال بی‌جواب می‌ماند:
-> این مغازه الان باز است؟ این قیمت هنوز واقعی است؟ و اگر جواب نداد، کجا بروم؟»
+> «ترب به ما می‌گوید یک محصول چند است. ولی وقتی می‌خواهیم **حضوری** بخریم، سه سؤال بی‌جواب
+> می‌ماند: کدام مغازه؟ الان باز است؟ و این قیمت هنوز واقعی است؟ ترب‌گرد همین را جواب می‌دهد.»
 
-Show the home screen: search box «چی می‌خوای بخری؟», sample queries, the chips
-«فقط فروشگاه‌های باز الان» / «همه فروشگاه‌ها» / «فقط فروشگاه‌های اقساطی تأییدشده».
-Point at the badge **«داده‌ی نمایشی (ساختار واقعی دیتاست)»**.
+Show the home screen, tap the location chip («موقعیت من» → allow), then point at the sentence under
+the search box: «قیمت‌ها ثبت‌شده‌اند؛ قبل از رفتن، از فروشنده بپرسید.»
 
-## 0:25 – 1:10 · From a sentence to three models
+## 0:20 — 0:50 · One sentence → three models
 
-Tap the suggestion **«هدفون بلوتوثی زیر ۳ میلیون»** → results screen.
+Type **«هدفون بلوتوثی زیر ۳ میلیون»** (or tap the suggestion). On the results screen:
 
-* Sort chips: «بهترین ترکیب»، «ارزان‌ترین»، «نزدیک‌ترین»، «مطمئن‌ترین».
-* Each card: price **+ age** + availability, e.g. «۲٬۴۵۰٬۰۰۰ تومان — ۱۲ روز پیش — موجودی نامشخص».
-* Select two products → **مقایسه** (specs table; unknown cells say «نامشخص»).
+* Sort chips: **بهترین ترکیب / ارزان‌ترین / نزدیک‌ترین / مطمئن‌ترین**.
+* Tap a card → the trade-off sheet: price range, specs the dataset actually knows, and «نامشخص»
+  for the ones it doesn't.
 
-Voice-over the rule: «هیچ‌جا قیمت بدون تاریخ و وضعیت موجودی نمی‌بینید.»
+> «هیچ مشخصاتی از خودمان نمی‌سازیم؛ هر چیزی که در دیتاست نباشد، نامشخص می‌ماند.»
 
-## 1:10 – 2:00 · Shops near me (this is the core)
+## 0:50 — 1:30 · Wrong-price protection
 
-Tap a model → **فروشگاه‌ها**.
+Tap the most expensive card → the small print under the price: **«ثبت‌شده ۳ ماه پیش»** in amber.
 
-* Stats strip: count, cheapest, nearest.
-* List shows distance, walk time, open/closed at arrival, installment badge.
-* Toggle **نقشه**: price pins on OSM tiles; tap a pin → shop popup.
-* Open **فیلترها**: radius, max price, «باز الان», «اقساطی» (hard filter, with the note
-  «فروشگاه بدون ارائه‌دهنده کنار گذاشته می‌شود»).
+> «این قیمت کهنه است. ترب‌گرد قیمت را با تاریخش نشان می‌دهد، نه به‌تنهایی.»
 
-Say: «قسطی فقط وقتی نشان داده می‌شود که دادهٔ پرداخت مغازه واقعاً اقساط حضوری داشته باشد؛
-محدودیت ۰/۰ یعنی نامشخص، نه بی‌نهایت.»
+## 1:30 — 2:20 · Shops near me (the core screen)
 
-## 2:00 – 2:40 · Compare, then look inside one shop
+Open a product, tap **فروشگاه‌ها**. Show:
 
-* Select 3 shops → **مقایسه** table: price, distance, hours, warranty, installment, address confidence.
-* Open one shop → **جزئیات فروشگاه**:
-  * status strip (open at ETA / unknown),
-  * score breakdown bars (why this shop is #1),
-  * **راهنمای داخل پاساژ**: floor/unit/landmark + «اطمینان آدرس» + a ready-to-say sentence,
-  * weekly hours sheet, contacts.
+1. the stats strip (تعداد، ارزان‌ترین، نزدیک‌ترین)،
+2. one card whose price is «۲٫۴ میلیون» with a green **باز در زمان رسیدن** and a walk time,
+3. one card with **بسته در زمان رسیدن** — tap «فقط باز الان» and watch it disappear,
+4. open **فیلترها** → turn on «قسطی تأییدشده» → the sheet explains it is a *hard* filter.
 
-## 2:40 – 3:40 · Ask the seller (the money moment)
+> «فاصله با هاورساین حساب می‌شود، چون به هیچ کلید مسیریابی وابسته نیستیم.»
 
-Tap **تماس با فروشنده**.
+## 2:20 — 2:50 · Compare stores
 
-* Badge **شبیه‌سازی** is visible; the notice explains that numbers are demo and real channels
-  (تماس / واتس‌اپ / بله) are one tap away.
-* Send the prefilled question «قیمت و موجودی همین مدل رو دارید؟».
-* Watch the stepper: ارسال شد → دیده شد → پاسخ آمد → **تأیید شد** (or **ناموجود** / **پاسخ نداد**).
-* Parsed answer grid: موجودی، قیمت تأییدشده، ساعت — anything unknown says «نامشخص».
+Select 3 shops → **مقایسه**. Point at the highlighted cheapest row, the «ساعت کاری در زمان رسیدن»
+row, and the installment row where two shops say **نامشخص** — the app refuses to guess.
 
-Second thread to show the failure path (pick a shop with stale price): no reply → after the
-timeout the card turns into **«فروشنده پاسخ نداد»** with 3 automatic alternatives.
+## 2:50 — 3:10 · Inside the mall
 
-## 3:40 – 4:15 · Alternatives and the trip plan
+Open the shop in «پاساژ نگین» → **راهنمای مسیر داخل پاساژ**:
 
-* From the alternatives card, open one → back to store detail.
-* Tap **برنامه سفر** (bottom nav «سفر»): numbered stops with times, warnings («این مغازه ساعت ۲۱
-  بسته می‌شود»), **باز کردن در نقشه** (Google Maps deep link), **کپی**.
+> «پاساژ نگین، طبقه زیرزمین، واحد ۲۸۵ — اطمینان ۹۰٪»
 
-## 4:15 – 4:45 · The agent, in one sentence
+Show the copy button and the ask-sentence.
 
-Tap the center FAB **دستیار**. Type:
+## 3:10 — 3:55 · Ask the seller (the money shot)
 
-> «گوشی سامسونگ تا ۲۰ میلیون قسطی، نزدیک ونک»
+Tap **پرسش قیمت و موجودی**. The contact sheet opens with the «شبیه‌سازی» badge and the honest note.
 
-* Tool trace appears («جست‌وجوی محصول»، «یافتن فروشگاه»…), then product and store cards.
-* Tap a card → the agent navigates the same screens (chat is an accelerator, not a wall).
+1. The message is pre-filled; send it.
+2. The timeline moves: ارسال شد → دیده شد → پاسخ آمد.
+3. The reply arrives: **«قیمت فعلی ۲۴٬۲۱۰٬۰۰۰ تومان است (قیمت ثبت‌شده ۲۵٬۳۱۰٬۰۰۰ تومان بود). موجود داریم.»**
+4. The parsed chips show **موجود** and **قیمت تأییدشده ۲۴٬۲۱۰٬۰۰۰**; the card turns green.
 
-If no LLM key is configured the header shows «حالت بدون مدل زبانی» — say it out loud:
-«بدون کلید هم همه‌ی این مسیر کار می‌کند؛ مدل فقط جمله‌بندی را بهتر می‌کند، داده را نمی‌سازد.»
+> «این تفاوت یک میلیون و صد هزار تومانی، همان دلیلی است که باید پرسید.»
 
-## 4:45 – 5:00 · Close
+## 3:55 — 4:25 · Silence is an answer too
 
-> «ترب‌گرد قیمت را به تصمیم تبدیل می‌کند: کدام مدل، کدام مغازه، الان باز است یا نه، و اگر جواب
-> نداد چه کنیم. هر عدد از داده می‌آید؛ هر چیزی که نمی‌دانیم، نامشخص می‌ماند.»
+Open a second shop that stays silent (the seed script names it). Send, wait ~15 s.
 
-End on the home screen with the badge visible.
+* The thread flips to **«پاسخ نداد»** with a red tone.
+* The alternatives sheet slides up: «همین محصول در ۳ فروشگاه دیگر» + «مدل‌های مشابه» — one tap goes back
+  to the store list with those pins.
+
+> «وقتی جواب نمی‌آید، به کاربر نمی‌گوییم صبر کن؛ جایگزین می‌دهیم.»
+
+## 4:25 — 4:40 · The plan
+
+Tap **برنامه سفر**: ordered stops with arrival time, «این مغازه ساعت ۲۰:۰۰ می‌بندد» warning,
+«باز کردن در نقشه» and «کپی».
+
+## 4:40 — 4:55 · The agent (one sentence, no typing beyond one line)
+
+Open **دستیار** (center button). Type:
+**«گوشی سامسونگ تا ۲۰ میلیون قسطی، نزدیک ونک»**
+
+Show the tool trace chips (جست‌وجوی محصول، یافتن فروشگاه …), then product and store cards inline.
+Point at the small line «منبع: دیتاست ترب، اسنپ‌شات ۲۰۲۶-۱۰-۱۳» under the answer.
+
+> «دستیار فقط انتخاب می‌کند؛ اعداد از ابزارها می‌آیند و هر جمله‌ای که عدد بی‌سند داشته باشد حذف می‌شود.»
+
+## 4:55 — 5:00 · Close
+
+> «ترب‌گرد جواب یک سؤال است: **آیا ارزش دارد برای این محصول، الان، به این مغازه بروم؟**»
+
+End on the plan screen.
 
 ---
 
-## Backup scenarios (if the live demo misbehaves)
+## Recording checklist
 
-| Situation | Do this instead |
+- [ ] `DEMO_NOW` set to a weekday evening (otherwise many shops are closed and the demo looks empty)
+- [ ] `make data` rebuilt **after** any ETL change (the DB is prebuilt)
+- [ ] `scripts/seed_demo.py` output pasted here with the chosen product
+- [ ] LLM key set **or** decide to show the deterministic mode on purpose (the UI labels it)
+- [ ] browser at 100 % zoom, 390×844, Persian keyboard
+- [ ] notifications off, other tabs closed
+- [ ] one silent shop and one answering shop identified in advance
+- [ ] the «شبیه‌سازی» badge is visible in the contact shot (it must not be cropped)
+
+## Fallbacks
+
+| If… | Then |
 |---|---|
-| LLM slow / no key | stay in degraded mode — the UI already labels it |
-| Map tiles blocked | switch to **لیست**; say «نقشه اختیاری است، دادهٔ فاصله از مختصات است» |
-| Seller replies too fast | raise `CONTACT_TIMEOUT_SECONDS` to 60 and re-record that beat |
-| A product has only stale prices | that is the point — show «قیمت کهنه» and the contact flow |
-| Search term unknown | use the three home suggestions; they are seeded and tested |
+| the LLM is slow or has no key | stay in deterministic mode and say: «همین مسیر بدون مدل هم کامل کار می‌کند» |
+| a seller answers too fast to film | raise `CONTACT_TIMEOUT_SECONDS` or re-open the thread |
+| the map tiles are blocked | switch to the list — distance and hours are independent of tiles |
+| a shop chosen in advance behaves differently | `scripts/seed_demo.py` prints a second candidate |
+| someone asks about real data | show `/api/meta` → `dataset_mode` and the «داده‌ی نمایشی» badge |
 
-## Shot list (for the editor)
+## What the five minutes must prove
 
-1. Home (badge + suggestions) — 5 s
-2. Search → results with price/age/availability — 8 s
-3. Product compare — 5 s
-4. Shops list — 6 s
-5. Map + pin popup — 6 s
-6. Filters sheet (installment) — 5 s
-7. Store detail: status strip + score bars — 7 s
-8. In-mall guide + copy — 5 s
-9. Contact: stepper → confirmed — 10 s
-10. Contact: timeout → alternatives — 8 s
-11. Plan screen — 7 s
-12. Agent chat with tool trace — 8 s
-13. Home close — 5 s
-
-## What must be on screen at some point
-
-- [ ] price **with** date and availability
-- [ ] «نامشخص» used for a genuinely unknown fact
-- [ ] a shop that is **closed at arrival**
-- [ ] installment filter excluding a shop
-- [ ] a simulated contact with the badge
-- [ ] a timeout with automatic alternatives
-- [ ] in-mall floor/unit guidance
-- [ ] visit plan
-- [ ] the agent calling tools
+1. price ≠ truth → date + availability are always adjacent
+2. open/closed is computed **at arrival**, and unknown is labelled
+3. installment is evidence-based, not decoration
+4. in-mall guidance is specific (floor/unit) or explicitly low-confidence
+5. contact → confirmed price/stock, or timeout → alternatives
+6. a plan the user can execute
+7. the agent is a shortcut, not a wall: every action exists as a button
