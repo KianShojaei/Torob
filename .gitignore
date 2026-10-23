@@ -28,3 +28,6 @@ part*.py
 upgrade_*.py
 add_pipeline_*.py
 prepare_for_github_and_server.py
+
+# Editor settings
+.vscode/

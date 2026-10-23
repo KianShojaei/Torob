@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>دستیار خرید حضوری ترب</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#141414; --stage:#1b1b1b; --line:#6b6b6b; --muted:#9a9a9a; --text:#ededed;
+  --ext:#3d3d3b; --ext-b:#5c5c58;
+  --ours:#0e4d3c; --ours-b:#2a8a6c; --ours-t:#7fe0bd;
+  --gate:#7a2e12; --gate-b:#c4561f; --gate-t:#ffb48a;
+  --data:#1f3550; --data-b:#3f6c9c; --data-t:#9cc8f5;
+  --gold:#f2c14e; --red:#e5484d;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:Vazirmatn,system-ui,sans-serif;overflow:hidden}
+.mono{font-family:"JetBrains Mono",ui-monospace,monospace;direction:ltr;unicode-bidi:isolate}
+#viewport{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+.slide{width:1600px;height:900px;background:var(--stage);position:absolute;transform-origin:center;padding:40px 56px 52px;display:none;flex-direction:column;border-radius:6px;box-shadow:0 30px 80px #0008}
+.slide.active{display:flex}
+.kicker{font-size:15px;color:var(--ours-t);letter-spacing:.5px;font-weight:600;display:flex;gap:10px;align-items:center}
+.kicker .dot{width:8px;height:8px;border-radius:50%;background:var(--ours-t)}
+h1{font-size:40px;font-weight:800;margin-top:6px;line-height:1.3}
+h1 em{font-style:normal;color:var(--gold)}
+.sub{color:var(--muted);font-size:17px;margin-top:4px}
+.pageno{position:absolute;left:56px;bottom:24px;color:#666;font-size:13px}
+.brand{position:absolute;left:150px;bottom:24px;color:#777;font-size:13px;direction:ltr}
+.brand b{color:#bbb;font-weight:600}
+
+/* ---------- Slide 1 ---------- */
+.problem{margin-top:20px;display:flex;gap:14px}
+.pain{flex:1;background:#232323;border:1px solid #333;border-radius:10px;padding:12px 16px;font-size:15px;color:#cfcfcf;display:flex;gap:10px;align-items:flex-start}
+.pain b{color:var(--red);font-size:22px;line-height:1}
+.steps{margin-top:20px;display:grid;grid-template-columns:repeat(4,1fr);gap:16px;flex:1}
+.step{background:var(--ours);border:1.5px solid var(--ours-b);border-radius:14px;padding:18px 18px 14px;position:relative;display:flex;flex-direction:column}
+.step .n{position:absolute;top:-16px;right:18px;background:var(--gold);color:#1b1b1b;font-weight:800;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-size:18px}
+.step h3{font-size:21px;margin-top:8px}
+.step .en{color:var(--ours-t);font-size:13px;margin-top:2px}
+.step ul{list-style:none;margin-top:12px;display:flex;flex-direction:column;gap:7px}
+.step li{font-size:14.5px;line-height:1.6;color:#e2f3ec;padding-right:14px;position:relative}
+.step li::before{content:"";position:absolute;right:0;top:10px;width:6px;height:6px;border-radius:2px;background:var(--ours-t)}
+.step .out{margin-top:auto;padding-top:10px;border-top:1px dashed #2a8a6c88;font-size:13px;color:var(--ours-t)}
+.step:not(:last-child)::after{content:"";position:absolute;left:-15px;top:50%;width:14px;height:2px;background:var(--line)}
+.bottom{display:grid;grid-template-columns:1.25fr 1fr;gap:16px;margin-top:18px}
+.box{background:#222;border:1px solid #333;border-radius:12px;padding:14px 18px}
+.box h4{font-size:15px;color:var(--gate-t);margin-bottom:10px;display:flex;gap:8px;align-items:center}
+.rules{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.rule{background:var(--gate);border:1px solid var(--gate-b);border-radius:8px;padding:7px 10px;font-size:13px;color:#ffe2d1;line-height:1.5}
+.bars{display:flex;flex-direction:column;gap:6px}
+.bar{display:grid;grid-template-columns:130px 1fr 44px;align-items:center;gap:10px;font-size:13.5px}
+.bar .track{height:12px;background:#2c2c2c;border-radius:6px;overflow:hidden}
+.bar .fill{height:100%;background:linear-gradient(270deg,var(--gold),#c9952c);border-radius:6px}
+.bar .v{color:var(--gold);font-weight:700;text-align:left}
+
+/* ---------- Slide 2 ---------- */
+.ga{display:grid;grid-template-columns:1fr 290px;gap:22px;margin-top:16px;flex:1;min-height:0}
+.arch{position:relative;display:flex;flex-direction:column;gap:0}
+.row{display:flex;gap:14px;justify-content:space-between;position:relative}
+.node{border-radius:10px;padding:9px 12px;text-align:center;border:1.5px solid;display:flex;flex-direction:column;justify-content:center;gap:3px;position:relative}
+.node .t{font-weight:700;font-size:16px}
+.node .d{font-size:12.5px;opacity:.9;line-height:1.5}
+.node .tech{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin-top:4px}
+.chip{font-family:"JetBrains Mono",monospace;direction:ltr;font-size:10.5px;padding:2px 7px;border-radius:20px;background:#0006;border:1px solid #ffffff22;color:#fff;white-space:nowrap}
+.ext{background:var(--ext);border-color:var(--ext-b);color:#e8e8e8}
+.ours{background:var(--ours);border-color:var(--ours-b)}
+.ours .d{color:var(--ours-t)}
+.gate{background:var(--gate);border-color:var(--gate-b)}
+.gate .d{color:var(--gate-t)}
+.data{background:var(--data);border-color:var(--data-b)}
+.data .d{color:var(--data-t)}
+.conn{height:22px;position:relative}
+.conn svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.layer{border:1.5px dashed #555;border-radius:14px;padding:22px 12px 12px;position:relative}
+.layer>.lbl{position:absolute;top:-11px;right:16px;background:var(--stage);padding:0 8px;font-size:12.5px;color:#aaa}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.side{display:flex;flex-direction:column;gap:12px;min-height:0}
+.panel{background:#222;border:1px solid #333;border-radius:12px;padding:12px 14px}
+.panel h4{font-size:14px;color:var(--gold);margin-bottom:8px}
+.stat{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;padding:3px 0;border-bottom:1px solid #2d2d2d;color:#cfcfcf}
+.stat:last-child{border:0}
+.stat b{font-family:"JetBrains Mono",monospace;color:#fff;font-size:15px}
+.lang{display:flex;flex-direction:column;gap:7px}
+.lang .l{display:grid;grid-template-columns:96px 1fr 38px;gap:8px;align-items:center;font-size:12.5px}
+.lang .l .k{font-family:"JetBrains Mono",monospace;direction:ltr;text-align:right}
+.lang .track{height:9px;background:#2c2c2c;border-radius:5px;overflow:hidden;direction:ltr}
+.lang .fill{height:100%;border-radius:5px}
+.lang .p{font-family:"JetBrains Mono",monospace;color:#aaa;font-size:11px;text-align:left}
+.weights{display:flex;height:22px;border-radius:6px;overflow:hidden;direction:rtl;margin-top:4px}
+.weights div{display:grid;place-items:center;font-size:10.5px;font-weight:700;color:#111}
+.wlegend{display:grid;grid-template-columns:1fr 1fr;gap:2px 8px;font-size:11.5px;color:#bbb;margin-top:6px}
+.legend{display:flex;gap:22px;margin-top:12px;font-size:13px;color:#aaa;align-items:center}
+.legend i{display:inline-block;width:14px;height:14px;border-radius:3px;margin-left:6px;vertical-align:-2px;border:1px solid}
+.flow{display:flex;gap:6px;align-items:center;font-size:12px;color:#bbb;flex-wrap:wrap}
+.flow span{background:#2a2a2a;border:1px solid #3a3a3a;border-radius:6px;padding:3px 8px}
+.flow .a{background:none;border:0;padding:0;color:#666}
+
+/* nav */
+#nav{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:9}
+#nav button{background:#2a2a2a;color:#ddd;border:1px solid #444;border-radius:20px;padding:6px 16px;font-family:inherit;font-size:13px;cursor:pointer}
+#nav button:hover{background:#383838}
+#nav button.on{background:var(--ours);border-color:var(--ours-b)}
+@media print{
+  @page{size:1600px 900px;margin:0}
+  html,body{overflow:visible;background:var(--stage)}
+  #nav{display:none}
+  #viewport{position:static;display:block}
+  .slide{display:flex!important;position:relative;transform:none!important;page-break-after:always;border-radius:0;box-shadow:none}
+}
+</style>
+</head>
+<body>
+<div id="viewport">
+
+<!-- ======================= SLIDE 1 : CHALLENGE ======================= -->
+<section class="slide active" id="s1">
+  <div class="brand"><b>Torob In-Store Assistant</b> · Hackathon · Tehran</div>
+  <div class="kicker"><span class="dot"></span>صورت مسئله چالش</div>
+  <h1>خریدِ حضوری در تهران هنوز <em>حدس و گمان</em> است؛ از «چی بخرم؟» تا «کجا بروم؟» یک دستیار لازم است</h1>
+  <p class="sub">دستیار باید روی دیتاست واقعی ترب (۶٬۴۷۶ فروشگاه، ۲۲۵٬۹۰۳ محصول، ۳۳۱٬۵۰۶ آفر) کار کند و هر چهار گام سفر خرید را پوشش دهد.</p>
+
+  <div class="problem">
+    <div class="pain"><b>!</b>نمی‌داند کدام مدل با نیاز و بودجه‌اش جور است؛ جستجو با غلط املایی («شیاومی») جواب نمی‌دهد.</div>
+    <div class="pain"><b>!</b>قیمت‌های ثبت‌شده قدیمی‌اند، به ریال/تومان قاطی شده‌اند و «ثبت در لیست» به معنی «موجود» نیست.</div>
+    <div class="pain"><b>!</b>پیدا کردن واحد دقیق در پاساژ، ساعت کاری و شرایط قسطی هر مغازه دشوار است.</div>
+    <div class="pain"><b>!</b>تماس تک‌تک با فروشنده‌ها وقت‌گیر است؛ ناموجودی یا بی‌پاسخی یعنی شروع دوباره.</div>
+  </div>
+
+  <div class="steps">
+    <div class="step"><span class="n">۱</span>
+      <h3>تصمیم: چه بخرم؟</h3><div class="en mono">Decide what to buy</div>
+      <ul>
+        <li>درک نیاز به زبان طبیعی فارسی، مقاوم به غلط املایی</li>
+        <li>تفکیک «کالای اصلی» از «ویژگی/لوازم جانبی»</li>
+        <li>پیشنهاد مدل با دلیل، قیمت منصفانه و جدول مقایسه</li>
+        <li>اعمال بودجه، برند و قسطی از دل همان جمله</li>
+      </ul>
+      <div class="out">خروجی: ۳ تا ۶ مدل قابل‌مقایسه</div>
+    </div>
+    <div class="step"><span class="n">۲</span>
+      <h3>یافتن مغازه‌های نزدیک</h3><div class="en mono">Find nearby stores</div>
+      <ul>
+        <li>شهر ← محله (۳۰ محله) یا موقعیت زنده GPS</li>
+        <li>نقشه تعاملی با قیمت روی پین‌ها</li>
+        <li>فقط مغازه‌هایی که آفر واقعی دارند</li>
+        <li>زمان رسیدن با خودرو، مترو یا پیاده</li>
+      </ul>
+      <div class="out">خروجی: فهرست و نقشه فروشگاه‌های دارنده کالا</div>
+    </div>
+    <div class="step"><span class="n">۳</span>
+      <h3>مقایسه شفاف فروشگاه‌ها</h3><div class="en mono">Compare stores</div>
+      <ul>
+        <li>قیمت در برابر کف بازار و تازگی قیمت</li>
+        <li>باز بودن مغازه در لحظه رسیدن</li>
+        <li>قسط حضوری، گارانتی و آدرس داخل پاساژ</li>
+        <li>امتیاز قابل توضیح، نه جعبه سیاه</li>
+      </ul>
+      <div class="out">خروجی: رتبه‌بندی + جدول ستون‌به‌ستون</div>
+    </div>
+    <div class="step"><span class="n">۴</span>
+      <h3>استعلام، چانه‌زنی و مسیر</h3><div class="en mono">Contact · Negotiate · Route</div>
+      <ul>
+        <li>استعلام هم‌زمان موجودی و قیمت روز از چند فروشنده</li>
+        <li>پیشنهاد قیمت منصفانه به فروشنده</li>
+        <li>جایگزین خودکار در ناموجودی یا عدم پاسخ</li>
+        <li>برنامه مراجعه با ترتیب بهینه و لینک مسیریابی</li>
+      </ul>
+      <div class="out">خروجی: برنامه خرید قابل اجرا در همان روز</div>
+    </div>
+  </div>
+
+  <div class="bottom">
+    <div class="box">
+      <h4>قیدهای سخت داده که دستیار نباید زیر پا بگذارد</h4>
+      <div class="rules">
+        <div class="rule">قیمت ثبت‌شده ≠ موجودی تأییدشده؛ همیشه جدا نمایش داده شود</div>
+        <div class="rule">زمان آخرین تغییر قیمت نسبت به اسنپ‌شات <span class="mono">2026-10-13</span></div>
+        <div class="rule">قیمت صفر، پرت یا ریالی (۱۰ برابر) باید شناسایی شود</div>
+        <div class="rule">۲۰٬۳۱۵ آفر تکراری؛ آخرین قیمت معتبر است</div>
+        <div class="rule">ساعت کاری دو شیفته و عبور از نیمه‌شب</div>
+        <div class="rule">نام‌ها و شماره‌های آزمایشی؛ بدون توهم و ساختن داده</div>
+      </div>
+    </div>
+    <div class="box">
+      <h4 style="color:var(--gold)">معیار داوری: ۳۰۰ امتیاز</h4>
+      <div class="bars">
+        <div class="bar"><span>محصول</span><div class="track"><div class="fill" style="width:100%"></div></div><span class="v">۷۵</span></div>
+        <div class="bar"><span>تجربه کاربری</span><div class="track"><div class="fill" style="width:100%"></div></div><span class="v">۷۵</span></div>
+        <div class="bar"><span>هوشمندی</span><div class="track"><div class="fill" style="width:66.7%"></div></div><span class="v">۵۰</span></div>
+        <div class="bar"><span>دیپلوی</span><div class="track"><div class="fill" style="width:53.3%"></div></div><span class="v">۴۰</span></div>
+        <div class="bar"><span>پیاده‌سازی فنی</span><div class="track"><div class="fill" style="width:53.3%"></div></div><span class="v">۴۰</span></div>
+        <div class="bar"><span>دیتاست</span><div class="track"><div class="fill" style="width:26.7%"></div></div><span class="v">۲۰</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="pageno mono">01 / 02</div>
+</section>
+
+<!-- ======================= SLIDE 2 : GRAPHICAL ABSTRACT ======================= -->
+<section class="slide" id="s2">
+  <div class="brand"><b>Torob In-Store Assistant</b> · Graphical Abstract</div>
+  <div class="kicker"><span class="dot"></span>خلاصه گرافیکی راهکار</div>
+  <h1 style="font-size:34px">یک سرویس <em>Python</em> روی یک پورت: داده تمیز، ایجنت قابل‌اعتماد، تصمیم شفاف</h1>
+
+  <div class="ga">
+    <div class="arch">
+      <!-- clients -->
+      <div class="row">
+        <div class="node ext" style="flex:1.35">
+          <div class="t">رابط وب فارسی (RTL، موبایل‌محور)</div>
+          <div class="d">چت، فیلتر خودکار، نقشه پین‌قیمت، ۴ تب گام‌به‌گام</div>
+          <div class="tech"><span class="chip">HTML5</span><span class="chip">Vanilla JS</span><span class="chip">Tailwind CSS</span><span class="chip">Leaflet 1.9</span><span class="chip">OpenStreetMap</span><span class="chip">Vazirmatn</span></div>
+        </div>
+        <div class="node ext" style="flex:.8">
+          <div class="t">موقعیت کاربر</div>
+          <div class="d">محله یا GPS مرورگر</div>
+          <div class="tech"><span class="chip">Geolocation API</span></div>
+        </div>
+        <div class="node ext" style="flex:.85">
+          <div class="t">مسیریاب‌ها</div>
+          <div class="d">لینک مستقیم مقصد</div>
+          <div class="tech"><span class="chip">Neshan</span><span class="chip">Balad</span><span class="chip">Google Maps</span></div>
+        </div>
+      </div>
+      <div class="conn"><svg viewBox="0 0 1000 22" preserveAspectRatio="none"><path d="M700 0 V22" stroke="#6b6b6b" stroke-width="1.5" marker-end="url(#ah)"/></svg></div>
+
+      <!-- API + LLM -->
+      <div class="row">
+        <div class="node ours" style="flex:1.5">
+          <div class="t">API Gateway و سروینگ یکپارچه</div>
+          <div class="d">۱۲ اندپوینت REST + استریم SSE، فرانت و بک روی پورت <span class="mono">8000</span>، <span class="mono">/healthz</span></div>
+          <div class="tech"><span class="chip">Python 3.11</span><span class="chip">FastAPI</span><span class="chip">Uvicorn ASGI</span><span class="chip">Pydantic v2</span><span class="chip">SSE</span></div>
+        </div>
+        <div class="node ours" style="flex:1.2">
+          <div class="t">ارکستراتور ایجنت</div>
+          <div class="d">استخراج نیت: بودجه، برند، کاربری، قسط و وسیله؛ کارت‌های پاسخ</div>
+          <div class="tech"><span class="chip">Regex NLU</span><span class="chip">Brand alias map</span><span class="chip">Entity ≠ Attribute</span></div>
+        </div>
+        <div class="node ext" style="flex:.95">
+          <div class="t">LLM Gateway</div>
+          <div class="d">اصلاح پرس‌وجوی مبهم، خروجی JSON</div>
+          <div class="tech"><span class="chip">OpenAI SDK</span><span class="chip">BoxAPI</span><span class="chip">temp=0 · 4s</span></div>
+        </div>
+      </div>
+      <div class="conn"><svg viewBox="0 0 1000 22" preserveAspectRatio="none"><path d="M500 0 V22" stroke="#6b6b6b" stroke-width="1.5" marker-end="url(#ah)"/></svg></div>
+
+      <!-- guardrail -->
+      <div class="node gate" style="padding:10px 14px">
+        <div class="t">گاردریل ضدتوهم (Grounding Gate): هر پاسخ فقط از ردیف‌های واقعی دیتابیس</div>
+        <div class="d">LLM اختیاری است و با قطع آن، موتور قاعده‌محور جایگزین می‌شود · تفکیک سه‌گانه «قیمت / زمان تغییر / موجودی» · قیمت نامعتبر = «قیمت نامشخص»</div>
+      </div>
+      <div class="conn"><svg viewBox="0 0 1000 22" preserveAspectRatio="none"><path d="M500 0 V22" stroke="#6b6b6b" stroke-width="1.5" marker-end="url(#ah)"/></svg></div>
+
+      <!-- service layer -->
+      <div class="layer">
+        <span class="lbl">لایه سرویس دامنه (Clean Layered Architecture: ETL · Repository · Services · Simulator)</span>
+        <div class="grid3">
+          <div class="node ours"><div class="t">جستجوی هیبریدی</div><div class="d">FTS5 + قواعد دسته، حذف لوازم جانبی، نرمال‌سازی فارسی</div><div class="tech"><span class="chip">SQLite FTS5</span><span class="chip">Unicode norm</span></div></div>
+          <div class="node ours"><div class="t">موتور رتبه‌بندی</div><div class="d">امتیاز چندمعیاره وزن‌دار در بازه <span class="mono">[0,1]</span> + قیمت منصفانه</div><div class="tech"><span class="chip">Weighted MCDA</span><span class="chip">Haversine</span></div></div>
+          <div class="node ours"><div class="t">موتور ساعت کاری</div><div class="d">باز بودن در لحظه رسیدن، دو شیفت، عبور از نیمه‌شب</div><div class="tech"><span class="chip">pytz Asia/Tehran</span></div></div>
+          <div class="node ours"><div class="t">راهنمای پاساژ</div><div class="d">نام پاساژ، طبقه و واحد؛ یکسان‌سازی املا</div><div class="tech"><span class="chip">Regex parser</span></div></div>
+          <div class="node ours"><div class="t">شبیه‌ساز فروشنده</div><div class="d">استعلام هم‌زمان، پیشنهاد قیمت، Failover خودکار</div><div class="tech"><span class="chip">MD5 deterministic</span><span class="chip">Timeout</span></div></div>
+          <div class="node ours"><div class="t">برنامه‌ریز مسیر</div><div class="d">ترتیب بهینه مراجعه، ساعت رسیدن، هشدار بسته بودن</div><div class="tech"><span class="chip">Greedy NN-TSP</span><span class="chip">ETA model</span></div></div>
+        </div>
+      </div>
+      <div class="conn"><svg viewBox="0 0 1000 22" preserveAspectRatio="none"><path d="M170 0 V22" stroke="#6b6b6b" stroke-width="1.5" marker-end="url(#ah)"/><path d="M500 0 V22" stroke="#6b6b6b" stroke-width="1.5" marker-end="url(#ah)"/><path d="M830 0 V22" stroke="#6b6b6b" stroke-width="1.5" marker-end="url(#ah)"/></svg></div>
+
+      <!-- data / infra -->
+      <div class="row">
+        <div class="node data" style="flex:1.3">
+          <div class="t">پایپ‌لاین ETL</div>
+          <div class="d">CSV خام ← نرمال‌سازی ← حذف تکراری ← اصلاح ریال/تومان ← گروه‌بندی مدل</div>
+          <div class="tech"><span class="chip">Python csv/json</span><span class="chip">batch insert</span></div>
+        </div>
+        <div class="node data" style="flex:1">
+          <div class="t">SQLite پرتابل</div>
+          <div class="d">۵ جدول + ایندکس + FTS5؛ باز شدن خودکار از <span class="mono">.db.gz</span></div>
+          <div class="tech"><span class="chip">SQL</span><span class="chip">gzip bootstrap</span></div>
+        </div>
+        <div class="node ext" style="flex:1">
+          <div class="t">دیپلوی و کیفیت</div>
+          <div class="d">ایمیج تک‌مرحله‌ای، Healthcheck، ۱۲ تست خودکار</div>
+          <div class="tech"><span class="chip">Docker</span><span class="chip">Compose</span><span class="chip">Liara</span><span class="chip">pytest</span></div>
+        </div>
+      </div>
+
+      <div class="legend">
+        <span><i style="background:var(--ext);border-color:var(--ext-b)"></i>سیستم‌ها و ابزارهای بیرونی</span>
+        <span><i style="background:var(--ours);border-color:var(--ours-b)"></i>کد ما</span>
+        <span><i style="background:var(--data);border-color:var(--data-b)"></i>لایه داده</span>
+        <span><i style="background:var(--gate);border-color:var(--gate-b)"></i>دروازه ایمنی: هر پاسخ از آن عبور می‌کند</span>
+      </div>
+    </div>
+
+    <!-- side panel -->
+    <div class="side">
+      <div class="panel">
+        <h4>زبان‌های برنامه‌نویسی</h4>
+        <div class="lang">
+          <div class="l"><span class="k">Python 3.11</span><div class="track"><div class="fill" style="width:73%;background:#3776ab"></div></div><span class="p">73%</span></div>
+          <div class="l"><span class="k">JS/HTML/CSS</span><div class="track"><div class="fill" style="width:27%;background:#f1e05a"></div></div><span class="p">27%</span></div>
+          <div class="l"><span class="k">SQL · FTS5</span><div class="track"><div class="fill" style="width:100%;background:#e38c00;opacity:.35"></div></div><span class="p">embed</span></div>
+          <div class="l"><span class="k">Docker/YAML</span><div class="track"><div class="fill" style="width:100%;background:#384d54"></div></div><span class="p">infra</span></div>
+          <div style="font-size:11.5px;color:#999;margin-top:2px">سهم از ۴٬۵۶۰ خط کد · بدون فریم‌ورک سنگین فرانت، بدون کلید نقشه پولی</div>
+        </div>
+      </div>
+      <div class="panel">
+        <h4>فرمول رتبه‌بندی فروشگاه</h4>
+        <div class="weights">
+          <div style="width:30%;background:#f2c14e">۳۰</div>
+          <div style="width:25%;background:#7fe0bd">۲۵</div>
+          <div style="width:20%;background:#9cc8f5">۲۰</div>
+          <div style="width:15%;background:#ffb48a">۱۵</div>
+          <div style="width:10%;background:#c9a0f5">۱۰</div>
+        </div>
+        <div class="wlegend">
+          <span>قیمت نسبت به کف بازار</span><span>مسافت و زمان رسیدن</span>
+          <span>باز در لحظه رسیدن</span><span>تازگی قیمت</span>
+          <span>قسط و گارانتی</span>
+        </div>
+      </div>
+      <div class="panel">
+        <h4>داده پاک‌شده در ETL</h4>
+        <div class="stat"><span>فروشگاه تهران</span><b>6,476</b></div>
+        <div class="stat"><span>محصول یکتا</span><b>225,903</b></div>
+        <div class="stat"><span>آفر یکتا پس از حذف تکرار</span><b>311,191</b></div>
+        <div class="stat"><span>مغازه داخل پاساژ</span><b>4,840</b></div>
+        <div class="stat"><span>دارای ساعت کاری</span><b>4,473</b></div>
+        <div class="stat"><span>قسطی (حضوری تأییدشده)</span><b>266 (82)</b></div>
+      </div>
+      <div class="panel">
+        <h4>جریان گام ۴ (هوشمندی)</h4>
+        <div class="flow">
+          <span>استعلام ۳ فروشگاه</span><span class="a">←</span>
+          <span style="color:var(--ours-t)">موجود ✓</span>
+          <span style="color:var(--red)">ناموجود</span>
+          <span style="color:var(--gold)">Timeout</span><span class="a">←</span>
+          <span>Failover</span><span class="a">←</span><span>برنامه مسیر</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="pageno mono">02 / 02</div>
+</section>
+</div>
+
+<svg width="0" height="0" style="position:absolute"><defs><marker id="ah" viewBox="0 0 10 10" refX="5" refY="9" markerWidth="7" markerHeight="7" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0 0 L5 9 L10 0" fill="none" stroke="#8a8a8a" stroke-width="1.6"/></marker></defs></svg>
+
+<div id="nav"><button data-i="0" class="on">۱. صورت مسئله</button><button data-i="1">۲. خلاصه گرافیکی</button></div>
+
+<script>
+const slides=[...document.querySelectorAll('.slide')];
+const btns=[...document.querySelectorAll('#nav button')];
+let cur=0;
+function fit(){const s=Math.min(innerWidth/1600,(innerHeight-64)/900);slides.forEach(el=>el.style.transform=`scale(${s})`);}
+function go(i){cur=Math.max(0,Math.min(slides.length-1,i));slides.forEach((el,k)=>el.classList.toggle('active',k===cur));btns.forEach((b,k)=>b.classList.toggle('on',k===cur));try{history.replaceState(null,'','#'+(cur+1))}catch(e){}}
+btns.forEach(b=>b.onclick=()=>go(+b.dataset.i));
+addEventListener('keydown',e=>{if(['ArrowLeft','PageDown',' '].includes(e.key))go(cur+1);if(['ArrowRight','PageUp'].includes(e.key))go(cur-1);});
+addEventListener('resize',fit);fit();
+if(location.hash==='#2')go(1);
+</script>
+</body>
+</html>
