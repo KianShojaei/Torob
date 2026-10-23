@@ -74,7 +74,7 @@ DDL = [
     """,
     "CREATE INDEX IF NOT EXISTS idx_products_category ON products(category)",
     "CREATE INDEX IF NOT EXISTS idx_products_brand ON products(brand)",
-    "CREATE INDEX IF NOT EXISTS idx_products_group ON products(group_id)",
+    # no index on group_id: it is only used for display, and it costs ~20 MB at full scale
     "CREATE INDEX IF NOT EXISTS idx_products_offers ON products(offer_count DESC)",
     # ---------- offers ----------
     """

@@ -76,7 +76,8 @@ Mobile-first, RTL, Persian typography (Vazirmatn), Persian digits, installable a
   OpenAI-compatible gateway). With `none` the same flows run deterministically — the demo never
   depends on a key. The UI labels that state honestly.
 * **Serving DB.** SQLite + FTS5 (bm25) with Persian folding and synonyms. The schema is plain SQL;
-  a Postgres migration path is documented in `docs/DATA.md`.
+  a Postgres migration path is documented in `docs/DATA.md`. At the full dataset scale the DB is
+  ~460 MB and the ETL takes ~75 s — done once, at image build time.
 
 ---
 
@@ -87,7 +88,7 @@ Requirements: Python 3.11+, Node 20+.
 ```bash
 make setup        # venv + pip + npm install
 make synthetic    # demo dataset (1,200 shops · 30,000 products · 60k offers)
-make data         # build backend/var/app.db  (~15 s) and validate invariants
+make data         # build backend/var/app.db (~11 s) and validate invariants
 make frontend     # build the PWA into backend/static
 make serve        # http://localhost:8000
 ```

@@ -39,8 +39,15 @@ CSV ──► readers ──► clean/normalise ──► derive ──► aggre
                                           installment)       shop stats)
 ```
 
-`python -m app.etl.build --data ../data --db var/app.db` runs every stage in one pass
-(~15 s for 60 k offers) and writes `backend/var/etl-report.json`.
+`python -m app.etl.build --data ../data --db var/app.db` runs every stage in one pass and writes
+`backend/var/etl-report.json`. Measured on this machine:
+
+| Dataset | Shops | Products | Offers | Build time | DB size |
+|---|---:|---:|---:|---:|---:|
+| demo (`make synthetic`) | 1,200 | 30,000 | 47,652 | ~11 s | 67 MB |
+| full scale (synthetic replica of §3) | 6,476 | 225,903 | 265,204 | ~74 s | 464 MB after `VACUUM` |
+
+The build ends with `VACUUM`, so the file is dense and pages in quickly on a small container.
 
 ### Decisions, one by one
 

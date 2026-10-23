@@ -417,6 +417,8 @@ def build(data_dir: Path, db_path: Path, snapshot: date = SNAPSHOT_DEFAULT) -> d
                  (json.dumps(meta, ensure_ascii=False),))
     conn.commit()
     conn.execute("PRAGMA optimize")
+    # rebuild the file densely: ~8 % smaller and faster to page in on a small container
+    conn.execute("VACUUM")
     conn.close()
 
     if db_path.exists():
