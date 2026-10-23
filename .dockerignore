@@ -5,4 +5,6 @@ __pycache__
 *.pyc
 .pytest_cache
 data/*.csv
+data/torob_assistant.db
+data/torob_assistant.db-*
 .env
